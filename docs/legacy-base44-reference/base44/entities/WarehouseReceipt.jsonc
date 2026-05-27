@@ -1,0 +1,69 @@
+{
+  "name": "WarehouseReceipt",
+  "type": "object",
+  "properties": {
+    "coffee_code": {
+      "type": "string",
+      "description": "Linked to PurchaseRecord coffee_code"
+    },
+    "purchase_record_id": {
+      "type": "string",
+      "description": "ID of the linked PurchaseRecord"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Auto-filled from linked Purchase"
+    },
+    "net_dispatch_weight_kg": {
+      "type": "number",
+      "description": "Pulled from linked Purchase"
+    },
+    "warehouse_received_net_kg": {
+      "type": "number",
+      "description": "Actual received weight in KG"
+    },
+    "bags_received": {
+      "type": "number",
+      "description": "Physical bag count received in warehouse (auto-syncs to Bag Ledger)"
+    },
+    "grn_code": {
+      "type": "string",
+      "description": "Goods Received Note code"
+    },
+    "dispatch_no": {
+      "type": "string",
+      "description": "Dispatch number"
+    },
+    "received_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date received (defaults to today)"
+    },
+    "remark": {
+      "type": "string",
+      "description": "Additional remarks"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Soft-delete flag. When true, hidden from all normal views."
+    },
+    "archived_by": {
+      "type": "string",
+      "description": "Email of user who archived the record"
+    },
+    "archived_at": {
+      "type": "string",
+      "description": "ISO date-time when archived"
+    },
+    "archive_reason": {
+      "type": "string",
+      "description": "Optional reason provided when archiving"
+    }
+  },
+  "required": [
+    "coffee_code",
+    "supplier_name",
+    "received_date"
+  ]
+}

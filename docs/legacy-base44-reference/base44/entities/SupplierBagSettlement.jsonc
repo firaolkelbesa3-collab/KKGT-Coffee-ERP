@@ -1,0 +1,55 @@
+{
+  "name": "SupplierBagSettlement",
+  "type": "object",
+  "properties": {
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier identifier"
+    },
+    "bags_received_adjustment": {
+      "type": "number",
+      "description": "Manual correction added to (or subtracted from) total bags received from the receipts log"
+    },
+    "bags_used_adjustment": {
+      "type": "number",
+      "description": "Manual correction added to (or subtracted from) total bags used for reject"
+    },
+    "loss_percent_override": {
+      "type": "number",
+      "description": "Override loss allowance percent for this supplier (defaults to 1%)"
+    },
+    "bags_returned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether physical bags have been returned to the supplier"
+    },
+    "bags_returned_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date bags were returned"
+    },
+    "bags_returned_count": {
+      "type": "number",
+      "description": "Number of bags physically returned"
+    },
+    "bags_returned_note": {
+      "type": "string"
+    },
+    "cash_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Legacy flag \u2014 cashPaid is now derived from SupplierBagPayment totals"
+    },
+    "cash_paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Legacy"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "supplier_name"
+  ]
+}

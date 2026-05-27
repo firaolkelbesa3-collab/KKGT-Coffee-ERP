@@ -1,0 +1,17 @@
+{
+  "name": "NotificationSettings",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user these settings belong to"
+    },
+    "disabled_types": {
+      "type": "string",
+      "description": "JSON array of notification type keys the user has disabled"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "recipient_email": {
+      "type": "string",
+      "description": "Email of the user who should receive this notification"
+    },
+    "recipient_role": {
+      "type": "string",
+      "description": "Role this notification targets (for role-based filtering)"
+    },
+    "type": {
+      "type": "string",
+      "description": "Notification type key e.g. new_purchase, payment_recorded, warehouse_confirmed, low_stock, etc."
+    },
+    "title": {
+      "type": "string",
+      "description": "Short title shown in bell dropdown"
+    },
+    "message": {
+      "type": "string",
+      "description": "Full notification message"
+    },
+    "link_path": {
+      "type": "string",
+      "description": "App path to navigate to e.g. /purchase-registration"
+    },
+    "link_label": {
+      "type": "string",
+      "description": "Label for the link e.g. View Purchase"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ],
+      "default": "info"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Related entity type"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "Related entity id"
+    }
+  },
+  "required": [
+    "recipient_email",
+    "type",
+    "title",
+    "message"
+  ]
+}

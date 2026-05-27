@@ -1,0 +1,90 @@
+{
+  "name": "SampleLog",
+  "type": "object",
+  "properties": {
+    "sample_type": {
+      "type": "string",
+      "enum": [
+        "Warehouse",
+        "Export Inspection",
+        "Export",
+        "Arrival"
+      ],
+      "default": "Warehouse",
+      "description": "Warehouse = deducts from supplier remaining KG. Export Inspection = legacy pool deduction. Export = linked to an export contract, deducts from coffee-type pool. Arrival = linked to a warehouse receipt, deducts from that receipt's received KG."
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier name \u2014 required for Warehouse type"
+    },
+    "coffee_type": {
+      "type": "string",
+      "description": "Coffee type \u2014 required for Export Inspection / Export types"
+    },
+    "buyer_name": {
+      "type": "string",
+      "description": "Buyer who sent the inspector (Export Inspection only)"
+    },
+    "inspection_ref": {
+      "type": "string",
+      "description": "Reference / id of linked Buyer Inspection record (Export Inspection only)"
+    },
+    "export_contract_id": {
+      "type": "string",
+      "description": "Linked ExportContract id (Export type only, optional)"
+    },
+    "export_contract_no": {
+      "type": "string",
+      "description": "Contract number for display (Export type only)"
+    },
+    "warehouse_receipt_id": {
+      "type": "string",
+      "description": "Linked WarehouseReceipt id (Arrival type only, optional)"
+    },
+    "coffee_code": {
+      "type": "string"
+    },
+    "sample_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "sample_datetime": {
+      "type": "string"
+    },
+    "sample_kg": {
+      "type": "number"
+    },
+    "company_recipient": {
+      "type": "string"
+    },
+    "keeper_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "remark": {
+      "type": "string"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Soft-delete flag. When true, hidden from all normal views."
+    },
+    "archived_by": {
+      "type": "string",
+      "description": "Email of user who archived the record"
+    },
+    "archived_at": {
+      "type": "string",
+      "description": "ISO date-time when archived"
+    },
+    "archive_reason": {
+      "type": "string",
+      "description": "Optional reason provided when archiving"
+    }
+  },
+  "required": [
+    "sample_kg"
+  ]
+}

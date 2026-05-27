@@ -1,0 +1,66 @@
+{
+  "name": "WarehouseReceiptHistory",
+  "type": "object",
+  "properties": {
+    "receipt_id": {
+      "type": "string",
+      "description": "ID of the linked WarehouseReceipt"
+    },
+    "coffee_code": {
+      "type": "string",
+      "description": "Coffee code at time of action"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier name at time of action"
+    },
+    "grn_code": {
+      "type": "string",
+      "description": "GRN code at time of action"
+    },
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "Created",
+        "Edited",
+        "Archived",
+        "Restored"
+      ],
+      "description": "Type of action performed"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of user who performed the action"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Full name of user who performed the action"
+    },
+    "user_role": {
+      "type": "string",
+      "description": "Role of user who performed the action"
+    },
+    "action_at": {
+      "type": "string",
+      "description": "ISO datetime of when the action was performed"
+    },
+    "changes": {
+      "type": "string",
+      "description": "JSON array of changed fields: [{field, label, old_value, new_value}]"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Optional reason (e.g. for archive actions)"
+    },
+    "kg_impact": {
+      "type": "string",
+      "description": "JSON object with KG change impact details if warehouse_received_net_kg changed"
+    }
+  },
+  "required": [
+    "receipt_id",
+    "action_type",
+    "user_email",
+    "action_at"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "MaterialEntry",
+  "type": "object",
+  "properties": {
+    "entry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the material entry"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Name of the material item, e.g. Jute Bags, GrainPro, Craft Paper"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Quantity purchased"
+    },
+    "unit_cost_etb": {
+      "type": "number",
+      "description": "Unit cost in ETB"
+    },
+    "total_cost_etb": {
+      "type": "number",
+      "description": "Auto-calculated: quantity * unit_cost_etb"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Optional purpose of purchase"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional free-text note"
+    }
+  },
+  "required": [
+    "entry_date",
+    "item_name",
+    "quantity",
+    "unit_cost_etb"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "SupplierBagReturn",
+  "type": "object",
+  "properties": {
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier the bags were returned to (supplier-level)"
+    },
+    "agent_name": {
+      "type": "string",
+      "description": "Agent the bags were returned to (agent-level)"
+    },
+    "return_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the bags were returned"
+    },
+    "bags_returned": {
+      "type": "number",
+      "description": "Number of bags returned in this entry"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "return_date",
+    "bags_returned"
+  ]
+}

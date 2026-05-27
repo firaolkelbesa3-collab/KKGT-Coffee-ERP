@@ -1,0 +1,50 @@
+{
+  "name": "SupplierBagPayment",
+  "type": "object",
+  "properties": {
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier the cash was paid to (supplier-level)"
+    },
+    "agent_name": {
+      "type": "string",
+      "description": "Agent the cash was paid to (agent-level)"
+    },
+    "payment_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the payment was made"
+    },
+    "bank_name": {
+      "type": "string",
+      "description": "Bank name"
+    },
+    "branch_account": {
+      "type": "string",
+      "description": "Branch / account info"
+    },
+    "reference_no": {
+      "type": "string",
+      "description": "CPV reference / document number"
+    },
+    "payment_type": {
+      "type": "string",
+      "enum": [
+        "Advance",
+        "Final Payment"
+      ],
+      "description": "Type of payment"
+    },
+    "amount_etb": {
+      "type": "number",
+      "description": "Amount paid in ETB"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "payment_date",
+    "amount_etb"
+  ]
+}

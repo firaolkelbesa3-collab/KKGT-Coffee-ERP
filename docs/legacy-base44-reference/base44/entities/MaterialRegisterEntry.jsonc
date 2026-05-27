@@ -1,0 +1,75 @@
+{
+  "name": "MaterialRegisterEntry",
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": [
+        "export",
+        "general"
+      ],
+      "default": "general",
+      "description": "Which tab this entry belongs to: export = Export Materials, general = General Purchase"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the material entry"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "Bag",
+        "Craft",
+        "Plaster",
+        "Green Pro"
+      ],
+      "description": "Export item type (only for category=export)"
+    },
+    "bag_size": {
+      "type": "string",
+      "enum": [
+        "30kg",
+        "50kg",
+        "60kg"
+      ],
+      "description": "Bag size variant (only when item_type=Bag)"
+    },
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "Purchase",
+        "Usage"
+      ],
+      "description": "Stock IN (Purchase) or OUT (Usage) - only for category=export"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Item name (used for category=general)"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Quantity purchased or used"
+    },
+    "unit_cost_etb": {
+      "type": "number",
+      "description": "Unit cost in ETB (required for Purchase entries)"
+    },
+    "total_cost_etb": {
+      "type": "number",
+      "description": "Total cost = quantity \u00d7 unit_cost_etb"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Optional purpose"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional note"
+    }
+  },
+  "required": [
+    "date",
+    "quantity"
+  ]
+}

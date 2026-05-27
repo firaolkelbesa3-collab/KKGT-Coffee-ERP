@@ -1,0 +1,41 @@
+{
+  "name": "Attachment",
+  "type": "object",
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "description": "Parent entity type: purchase_record | warehouse_receipt | export_contract"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the parent record"
+    },
+    "section": {
+      "type": "string",
+      "description": "Subsection label, e.g. contract_document | payment_voucher | grn_certificate | dispatch_note | weighbridge_ticket | export_doc"
+    },
+    "section_ref": {
+      "type": "string",
+      "description": "Optional reference e.g. CPV reference number or document name"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of the uploaded PDF"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "uploaded_by": {
+      "type": "string",
+      "description": "User who uploaded"
+    }
+  },
+  "required": [
+    "entity_type",
+    "entity_id",
+    "section",
+    "file_url",
+    "file_name"
+  ]
+}

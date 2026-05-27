@@ -1,0 +1,80 @@
+{
+  "name": "ProcessingBatch",
+  "type": "object",
+  "properties": {
+    "batch_number": {
+      "type": "string",
+      "description": "Unique batch identifier"
+    },
+    "lot_number": {
+      "type": "string",
+      "description": "Source lot from warehouse"
+    },
+    "coffee_type": {
+      "type": "string",
+      "enum": [
+        "Arabica",
+        "Robusta",
+        "Mixed"
+      ]
+    },
+    "process_type": {
+      "type": "string",
+      "enum": [
+        "Washed",
+        "Natural",
+        "Honey",
+        "Semi-Washed"
+      ],
+      "description": "Processing method"
+    },
+    "input_quantity_kg": {
+      "type": "number",
+      "description": "Input quantity in kg"
+    },
+    "output_quantity_kg": {
+      "type": "number",
+      "description": "Output quantity after processing in kg"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Washing",
+        "Drying",
+        "Hulling",
+        "Grading",
+        "Completed"
+      ],
+      "default": "Pending"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "output_grade": {
+      "type": "string",
+      "enum": [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "batch_number",
+    "lot_number",
+    "coffee_type",
+    "process_type",
+    "input_quantity_kg"
+  ]
+}

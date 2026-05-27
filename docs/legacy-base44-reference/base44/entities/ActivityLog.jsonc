@@ -1,0 +1,49 @@
+{
+  "name": "ActivityLog",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who performed the action"
+    },
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "Created",
+        "Edited",
+        "Archived",
+        "Restored"
+      ],
+      "description": "Type of action performed"
+    },
+    "screen_name": {
+      "type": "string",
+      "description": "Screen / module where the action happened (e.g. 'Purchase Registration')"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type acted on (e.g. 'PurchaseRecord')"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the affected record"
+    },
+    "record_description": {
+      "type": "string",
+      "description": "Human-readable description of the record (e.g. 'Purchase KKGT/Wollega/001/2026 - Supplier ABC')"
+    },
+    "changes": {
+      "type": "string",
+      "description": "JSON array of edited fields: [{field, old_value, new_value}]"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Optional reason (e.g. archive_reason)"
+    }
+  },
+  "required": [
+    "user_email",
+    "action_type",
+    "screen_name"
+  ]
+}

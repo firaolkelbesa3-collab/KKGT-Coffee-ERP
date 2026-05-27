@@ -1,0 +1,68 @@
+{
+  "name": "WarehouseInventory",
+  "type": "object",
+  "properties": {
+    "lot_number": {
+      "type": "string",
+      "description": "Unique lot identifier"
+    },
+    "coffee_type": {
+      "type": "string",
+      "enum": [
+        "Arabica",
+        "Robusta",
+        "Mixed"
+      ]
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5",
+        "Ungraded"
+      ]
+    },
+    "quantity_kg": {
+      "type": "number",
+      "description": "Current quantity in warehouse (kg)"
+    },
+    "warehouse_location": {
+      "type": "string",
+      "description": "Warehouse name or section"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "In Storage",
+        "In Processing",
+        "Ready for Export",
+        "Exported"
+      ],
+      "default": "In Storage"
+    },
+    "received_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "source_purchase_id": {
+      "type": "string",
+      "description": "Reference to the purchase record"
+    },
+    "moisture_content": {
+      "type": "number",
+      "description": "Moisture content percentage"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "lot_number",
+    "coffee_type",
+    "quantity_kg",
+    "warehouse_location"
+  ]
+}

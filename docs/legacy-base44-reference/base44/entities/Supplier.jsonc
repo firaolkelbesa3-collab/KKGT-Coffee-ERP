@@ -1,0 +1,72 @@
+{
+  "name": "Supplier",
+  "type": "object",
+  "properties": {
+    "supplier_name": {
+      "type": "string",
+      "description": "Name of the supplier"
+    },
+    "region": {
+      "type": "string",
+      "enum": [
+        "Wollega",
+        "Yirgacheffe",
+        "Sidama",
+        "Jimma",
+        "Harrar",
+        "Kaffa",
+        "Guji",
+        "Bench",
+        "Gedeo",
+        "Other"
+      ]
+    },
+    "agent": {
+      "type": "string",
+      "description": "Agent name"
+    },
+    "coffee_type": {
+      "type": "string",
+      "enum": [
+        "Unwashed Lekempti",
+        "Washed Yirgacheffe",
+        "Natural Sidama",
+        "Washed Sidama",
+        "Unwashed Harrar",
+        "Washed Jimma",
+        "Natural Guji",
+        "Washed Guji",
+        "Other"
+      ]
+    },
+    "opening_stock_kg": {
+      "type": "number",
+      "description": "Opening stock in kilograms"
+    },
+    "phone_number": {
+      "type": "string",
+      "description": "Supplier phone number"
+    },
+    "coffee_origin": {
+      "type": "string",
+      "description": "Coffee origin e.g. Wollega, Guji, Sidama"
+    },
+    "station_name": {
+      "type": "string",
+      "description": "SH. Station Name"
+    },
+    "agreement_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Agreement start date"
+    },
+    "agreement_expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Agreement expiry date"
+    }
+  },
+  "required": [
+    "supplier_name"
+  ]
+}

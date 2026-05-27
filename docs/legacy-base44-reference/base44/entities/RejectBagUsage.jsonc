@@ -1,0 +1,43 @@
+{
+  "name": "RejectBagUsage",
+  "type": "object",
+  "properties": {
+    "reject_mode": {
+      "type": "string",
+      "enum": [
+        "agent",
+        "supplier"
+      ],
+      "default": "agent",
+      "description": "agent = deducted from agent-level summary. supplier = deducted from supplier-level summary."
+    },
+    "agent_name": {
+      "type": "string",
+      "description": "Agent name (used when reject_mode=agent)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of reject bag usage"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier whose bags were used (used when reject_mode=supplier)"
+    },
+    "bags_used": {
+      "type": "number",
+      "description": "Number of bags used for reject"
+    },
+    "amount_etb": {
+      "type": "number",
+      "description": "Auto-calculated: bags_used \u00d7 153 ETB"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "bags_used"
+  ]
+}

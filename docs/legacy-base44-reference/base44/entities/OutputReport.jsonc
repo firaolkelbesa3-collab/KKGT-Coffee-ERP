@@ -1,0 +1,121 @@
+{
+  "name": "OutputReport",
+  "type": "object",
+  "properties": {
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Recleaned"
+      ],
+      "default": "Standard",
+      "description": "Standard = Pool 1 fresh stock. Recleaned = Pool 2, came from a recleaning processing entry."
+    },
+    "inspection_ref": {
+      "type": "string",
+      "description": "Linked Buyer Inspection id (Recleaned only)"
+    },
+    "buyer_name": {
+      "type": "string",
+      "description": "Buyer reference (Recleaned only)"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Original rejection reason (Recleaned only)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Legacy single date field \u2014 kept for backward compat. Use start_date/end_date instead."
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Processing start date (required)"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Processing end date (required)"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier whose coffee is being processed"
+    },
+    "coffee_type": {
+      "type": "string",
+      "description": "Coffee type (auto-filled from supplier)"
+    },
+    "total_kg_processed": {
+      "type": "number",
+      "description": "Auto-summed from ProcessingLog for that date"
+    },
+    "additional_pool1_kg": {
+      "type": "number",
+      "default": 0,
+      "description": "Additional KG drawn from Pool 1 (Fresh Stock) to supplement a Recleaning entry. Only set on Recleaned entries."
+    },
+    "export_bags": {
+      "type": "number"
+    },
+    "export_kg": {
+      "type": "number",
+      "description": "export_bags \u00d7 60"
+    },
+    "reject_bags": {
+      "type": "number"
+    },
+    "reject_kg": {
+      "type": "number",
+      "description": "reject_bags \u00d7 85"
+    },
+    "waste_kg": {
+      "type": "number",
+      "description": "total_kg_processed - export_kg - reject_kg"
+    },
+    "reject_pct": {
+      "type": "number",
+      "description": "reject_kg / total_kg_processed * 100"
+    },
+    "waste_pct": {
+      "type": "number",
+      "description": "waste_kg / total_kg_processed * 100"
+    },
+    "registrar_name": {
+      "type": "string"
+    },
+    "remark": {
+      "type": "string"
+    },
+    "export_status": {
+      "type": "string",
+      "enum": [
+        "Available for Export",
+        "Exported"
+      ],
+      "default": "Available for Export",
+      "description": "Whether this output has been linked to an export contract"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Soft-delete flag. When true, hidden from all normal views."
+    },
+    "archived_by": {
+      "type": "string",
+      "description": "Email of user who archived the record"
+    },
+    "archived_at": {
+      "type": "string",
+      "description": "ISO date-time when archived"
+    },
+    "archive_reason": {
+      "type": "string",
+      "description": "Optional reason provided when archiving"
+    }
+  },
+  "required": [
+    "start_date",
+    "end_date"
+  ]
+}

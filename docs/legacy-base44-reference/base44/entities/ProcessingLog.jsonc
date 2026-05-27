@@ -1,0 +1,82 @@
+{
+  "name": "ProcessingLog",
+  "type": "object",
+  "properties": {
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Recleaning"
+      ],
+      "default": "Standard",
+      "description": "Standard = fresh warehouse stock. Recleaning = reprocessing rejected coffee."
+    },
+    "entry_mode": {
+      "type": "string",
+      "enum": [
+        "By Bags",
+        "By KG"
+      ],
+      "default": "By Bags",
+      "description": "How quantity was entered. By Bags = user enters bags, KG inferred as bags\u00d785. By KG = user enters KG directly with no rounding."
+    },
+    "buyer_name": {
+      "type": "string"
+    },
+    "inspection_ref": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "supplier_name": {
+      "type": "string"
+    },
+    "coffee_type": {
+      "type": "string"
+    },
+    "coffee_code": {
+      "type": "string",
+      "description": "Linked PurchaseRecord coffee_code (used by archive cascade)"
+    },
+    "bags_sent": {
+      "type": "number"
+    },
+    "kg_sent": {
+      "type": "number"
+    },
+    "actual_weighed_kg": {
+      "type": "number"
+    },
+    "batch_variance_kg": {
+      "type": "number"
+    },
+    "batch_no": {
+      "type": "string"
+    },
+    "remark": {
+      "type": "string"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Soft-delete flag. When true, hidden from all normal views."
+    },
+    "archived_by": {
+      "type": "string",
+      "description": "Email of user who archived the record"
+    },
+    "archived_at": {
+      "type": "string",
+      "description": "ISO date-time when archived"
+    },
+    "archive_reason": {
+      "type": "string",
+      "description": "Optional reason provided when archiving"
+    }
+  },
+  "required": [
+    "date"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "name": "BagReceipt",
+  "type": "object",
+  "properties": {
+    "receipt_mode": {
+      "type": "string",
+      "enum": [
+        "agent",
+        "supplier"
+      ],
+      "default": "agent",
+      "description": "How this receipt was added. agent = tracked at agent level. supplier = tracked at individual supplier level. Immutable after save."
+    },
+    "agent_name": {
+      "type": "string",
+      "description": "Agent name (required when receipt_mode=agent; reference when receipt_mode=supplier)"
+    },
+    "warehouse_receipt_id": {
+      "type": "string",
+      "description": "Linked WarehouseReceipt id (when source=warehouse)"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier name (required when receipt_mode=supplier; null when receipt_mode=agent)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of bag receipt"
+    },
+    "warehouse_received_kg": {
+      "type": "number",
+      "description": "Warehouse received net KG (optional for manual entries)"
+    },
+    "bags_received": {
+      "type": "number",
+      "description": "Physical bag count"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "warehouse",
+        "manual"
+      ],
+      "default": "manual",
+      "description": "warehouse = auto-created from Warehouse Receipt; manual = manually added"
+    },
+    "note": {
+      "type": "string"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Soft-delete flag."
+    },
+    "archived_by": {
+      "type": "string"
+    },
+    "archived_at": {
+      "type": "string"
+    },
+    "archive_reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "bags_received"
+  ]
+}

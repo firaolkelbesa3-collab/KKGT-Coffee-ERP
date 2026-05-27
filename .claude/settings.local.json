@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"D:/coffee-flow\" 2>&1 | head -50; echo \"---\"; ls \"D:/download/\" 2>&1 | head -20)",
+      "Bash(Get-ChildItem -Path \"D:/download/obedient-kkgt-coffee-flow \\(2\\)/base44/entities/\" -Filter \"*.jsonc\")",
+      "Bash(Select-Object Name)",
+      "Bash(Sort-Object Name)",
+      "Bash(xargs wc -l)"
+    ]
+  }
+}

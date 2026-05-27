@@ -1,0 +1,259 @@
+{
+  "name": "ExportContract",
+  "type": "object",
+  "properties": {
+    "stock_pool": {
+      "type": "string",
+      "enum": [
+        "Fresh",
+        "Recleaned"
+      ],
+      "default": "Fresh",
+      "description": "Which stock pool this contract draws from. Fresh = Pool 1 (standard processing output). Recleaned = Pool 2 (recleaning output)."
+    },
+    "contract_no": {
+      "type": "string",
+      "description": "Auto-generated: KKGT/EXP/001/2026"
+    },
+    "contract_pi_number": {
+      "type": "string",
+      "description": "Contract PI Number \u2014 optional, manually entered"
+    },
+    "contract_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "coffee_type": {
+      "type": "string"
+    },
+    "coffee_grade": {
+      "type": "string"
+    },
+    "destination_country": {
+      "type": "string"
+    },
+    "buyer_name": {
+      "type": "string"
+    },
+    "payment_terms": {
+      "type": "string",
+      "enum": [
+        "Letter of Credit (LC)",
+        "Cash Against Documents (CAD)",
+        "Advance Payment",
+        "Open Account",
+        "Other"
+      ]
+    },
+    "custom_payment_terms": {
+      "type": "string",
+      "description": "Free-text payment terms when payment_terms = Other"
+    },
+    "expected_payment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "export_kg": {
+      "type": "number"
+    },
+    "export_bags": {
+      "type": "number"
+    },
+    "price_per_kg_usd": {
+      "type": "number"
+    },
+    "contract_rate_etb": {
+      "type": "number",
+      "description": "USD/ETB rate. Optional \u2014 can be added later via 'Add Rate' button."
+    },
+    "rate_status": {
+      "type": "string",
+      "enum": [
+        "Rate Pending",
+        "Rate Confirmed"
+      ],
+      "default": "Rate Confirmed",
+      "description": "Whether the contract's exchange rate has been entered yet."
+    },
+    "rate_confirmed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when the exchange rate was filled in (auto-set)."
+    },
+    "total_export_value_usd": {
+      "type": "number"
+    },
+    "total_export_value_etb": {
+      "type": "number"
+    },
+    "cost_rows": {
+      "type": "string",
+      "description": "JSON array: [{name, amount_etb}]"
+    },
+    "material_rows": {
+      "type": "string",
+      "description": "JSON array of export materials purchased: [{name, quantity, unit_cost_etb}]"
+    },
+    "total_materials_etb": {
+      "type": "number",
+      "description": "Sum of material_rows totals (quantity * unit_cost_etb)"
+    },
+    "total_costs_etb": {
+      "type": "number"
+    },
+    "reject_sales_etb": {
+      "type": "number"
+    },
+    "grand_total_revenue_etb": {
+      "type": "number"
+    },
+    "profit_etb": {
+      "type": "number"
+    },
+    "profit_usd": {
+      "type": "number"
+    },
+    "profit_margin_pct": {
+      "type": "number"
+    },
+    "payment_history": {
+      "type": "string"
+    },
+    "total_received_usd": {
+      "type": "number"
+    },
+    "total_received_etb": {
+      "type": "number"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "Unpaid",
+        "Partial",
+        "Fully Received"
+      ],
+      "default": "Unpaid"
+    },
+    "remark": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "In Progress",
+        "Shipped",
+        "Completed"
+      ],
+      "default": "Pending"
+    },
+    "commodity": {
+      "type": "string"
+    },
+    "export_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "total_export_value_usd_legacy": {
+      "type": "number"
+    },
+    "usd_rate_etb": {
+      "type": "number"
+    },
+    "arrival_inputs": {
+      "type": "string"
+    },
+    "purchase_cost_etb": {
+      "type": "number"
+    },
+    "commission_on_purchase_etb": {
+      "type": "number"
+    },
+    "cleaning_charges_etb": {
+      "type": "number"
+    },
+    "recleaning_charges_etb": {
+      "type": "number"
+    },
+    "packing_bag_green_pro_etb": {
+      "type": "number"
+    },
+    "bag_mark_craft_etb": {
+      "type": "number"
+    },
+    "bag_printing_etb": {
+      "type": "number"
+    },
+    "loading_unloading_etb": {
+      "type": "number"
+    },
+    "warehouse_expenses_etb": {
+      "type": "number"
+    },
+    "local_transportation_etb": {
+      "type": "number"
+    },
+    "edr_clearance_train_fee_etb": {
+      "type": "number"
+    },
+    "demurrage_etb": {
+      "type": "number"
+    },
+    "freight_etb": {
+      "type": "number"
+    },
+    "commission_on_sales_etb": {
+      "type": "number"
+    },
+    "bl_container_fee_etb": {
+      "type": "number"
+    },
+    "fumigation_etb": {
+      "type": "number"
+    },
+    "coo_etb": {
+      "type": "number"
+    },
+    "container_picking_etb": {
+      "type": "number"
+    },
+    "ico_etb": {
+      "type": "number"
+    },
+    "private_co_weight_quality_etb": {
+      "type": "number"
+    },
+    "coffee_association_etb": {
+      "type": "number"
+    },
+    "plomp_payment_etb": {
+      "type": "number"
+    },
+    "other_costs_etb": {
+      "type": "number"
+    },
+    "total_reject_sales_etb": {
+      "type": "number"
+    },
+    "total_expenses_etb": {
+      "type": "number"
+    },
+    "export_total_sales_price_etb": {
+      "type": "number"
+    },
+    "grand_total_sales_etb": {
+      "type": "number"
+    },
+    "total_profit_etb": {
+      "type": "number"
+    },
+    "profit_usd_legacy": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "contract_no",
+    "destination_country",
+    "contract_date"
+  ]
+}

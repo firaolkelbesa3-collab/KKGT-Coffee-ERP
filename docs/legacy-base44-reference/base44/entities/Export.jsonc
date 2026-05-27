@@ -1,0 +1,85 @@
+{
+  "name": "Export",
+  "type": "object",
+  "properties": {
+    "contract_number": {
+      "type": "string",
+      "description": "Export contract number"
+    },
+    "buyer_name": {
+      "type": "string",
+      "description": "Name of the buyer/importer"
+    },
+    "buyer_country": {
+      "type": "string",
+      "description": "Destination country"
+    },
+    "coffee_type": {
+      "type": "string",
+      "enum": [
+        "Arabica",
+        "Robusta",
+        "Mixed"
+      ]
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5"
+      ]
+    },
+    "quantity_kg": {
+      "type": "number",
+      "description": "Export quantity in kg"
+    },
+    "price_per_kg_usd": {
+      "type": "number",
+      "description": "Price per kg in USD"
+    },
+    "total_value_usd": {
+      "type": "number",
+      "description": "Total export value in USD"
+    },
+    "shipment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Contract Signed",
+        "Preparing",
+        "In Transit",
+        "Delivered",
+        "Completed"
+      ],
+      "default": "Contract Signed"
+    },
+    "shipping_method": {
+      "type": "string",
+      "enum": [
+        "Sea Freight",
+        "Air Freight",
+        "Land Transport"
+      ]
+    },
+    "batch_numbers": {
+      "type": "string",
+      "description": "Comma-separated batch numbers included"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_number",
+    "buyer_name",
+    "buyer_country",
+    "coffee_type",
+    "quantity_kg"
+  ]
+}

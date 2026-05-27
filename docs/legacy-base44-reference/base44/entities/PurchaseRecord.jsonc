@@ -1,0 +1,156 @@
+{
+  "name": "PurchaseRecord",
+  "type": "object",
+  "properties": {
+    "coffee_code": {
+      "type": "string",
+      "description": "Auto-generated coffee code e.g. KKGT/Region/001/2026"
+    },
+    "purchase_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of purchase"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Name of the supplier"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Agent name"
+    },
+    "region": {
+      "type": "string",
+      "description": "Region of the supplier"
+    },
+    "coffee_type": {
+      "type": "string",
+      "description": "Type of coffee"
+    },
+    "net_dispatch_weight_kg": {
+      "type": "number",
+      "description": "Net dispatch weight in kilograms"
+    },
+    "other_cost_etb": {
+      "type": "number",
+      "description": "Other costs in ETB"
+    },
+    "unit_price_etb_per_feresula": {
+      "type": "number",
+      "description": "Unit price in ETB per Feresula"
+    },
+    "commission_percent": {
+      "type": "number",
+      "description": "Commission percentage"
+    },
+    "remark": {
+      "type": "string",
+      "description": "Additional remarks"
+    },
+    "net_feresula": {
+      "type": "number",
+      "description": "Calculated: Net Dispatch Weight KG / 17"
+    },
+    "commission_etb": {
+      "type": "number",
+      "description": "Calculated: Unit Price \u00d7 Net Feresula \u00d7 Commission% / 100"
+    },
+    "total_purchase_price": {
+      "type": "number",
+      "description": "Calculated: Unit Price \u00d7 Net Feresula"
+    },
+    "grand_total_etb": {
+      "type": "number",
+      "description": "Calculated: Total Purchase Price + Other Cost + Commission ETB"
+    },
+    "balance_etb": {
+      "type": "number",
+      "description": "Stored balance (Grand Total - Total Paid). Use live calculation from payment_history for display."
+    },
+    "payment_history": {
+      "type": "string",
+      "description": "JSON array of payment entries: [{payment_no, payment_date, bank_name, branch_account, amount_etb, cpv_reference, payment_type, note}]"
+    },
+    "total_paid_etb": {
+      "type": "number",
+      "description": "Stored sum of payments. Always recompute from payment_history for display \u2014 this field may be stale."
+    },
+    "additional_costs": {
+      "type": "string",
+      "description": "JSON array of additional cost rows: [{name, amount}]"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Soft-delete flag. When true, hidden from all normal views."
+    },
+    "archived_by": {
+      "type": "string",
+      "description": "Email of user who archived the record"
+    },
+    "archived_at": {
+      "type": "string",
+      "description": "ISO date-time when archived"
+    },
+    "archive_reason": {
+      "type": "string",
+      "description": "Optional reason provided when archiving"
+    }
+  },
+  "required": [
+    "supplier_name",
+    "purchase_date"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "purchaser"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "purchaser"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "warehouse_keeper"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

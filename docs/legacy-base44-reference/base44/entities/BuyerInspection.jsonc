@@ -1,0 +1,83 @@
+{
+  "name": "BuyerInspection",
+  "type": "object",
+  "properties": {
+    "inspection_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the inspection was conducted"
+    },
+    "buyer_name": {
+      "type": "string",
+      "description": "Buyer who sent the inspector"
+    },
+    "coffee_type": {
+      "type": "string",
+      "description": "Coffee type being inspected"
+    },
+    "kg_to_inspect": {
+      "type": "number",
+      "description": "Quantity of coffee being checked"
+    },
+    "sample_kg_taken": {
+      "type": "number",
+      "description": "Small sample KG taken by inspector to their lab \u2014 deducted from total coffee type stock"
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Passed",
+        "Failed"
+      ],
+      "default": "Pending",
+      "description": "Outcome of the inspection"
+    },
+    "kg_approved": {
+      "type": "number",
+      "description": "KG approved for export (when Passed)"
+    },
+    "linked_contract_id": {
+      "type": "string",
+      "description": "Linked export contract id (when Passed and contract chosen)"
+    },
+    "linked_contract_no": {
+      "type": "string",
+      "description": "Linked contract number for display"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "enum": [
+        "Too Much Moisture",
+        "Grade Too Low",
+        "Defects",
+        "Smell/Taste Issue",
+        "Other"
+      ],
+      "description": "Reason for failure"
+    },
+    "kg_rejected": {
+      "type": "number",
+      "description": "KG rejected (when Failed)"
+    },
+    "action_taken": {
+      "type": "string",
+      "enum": [
+        "Reprocess",
+        "Sell Locally",
+        "Hold in Warehouse"
+      ],
+      "description": "Action chosen for rejected coffee"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "inspection_date",
+    "buyer_name",
+    "coffee_type",
+    "kg_to_inspect",
+    "sample_kg_taken"
+  ]
+}

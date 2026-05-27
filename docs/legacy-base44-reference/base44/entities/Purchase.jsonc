@@ -1,0 +1,72 @@
+{
+  "name": "Purchase",
+  "type": "object",
+  "properties": {
+    "supplier_name": {
+      "type": "string",
+      "description": "Name of the farmer or supplier"
+    },
+    "supplier_location": {
+      "type": "string",
+      "description": "Location/region of the supplier"
+    },
+    "coffee_type": {
+      "type": "string",
+      "enum": [
+        "Arabica",
+        "Robusta",
+        "Mixed"
+      ],
+      "description": "Type of coffee purchased"
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5",
+        "Ungraded"
+      ],
+      "description": "Quality grade of the coffee"
+    },
+    "quantity_kg": {
+      "type": "number",
+      "description": "Quantity purchased in kilograms"
+    },
+    "price_per_kg": {
+      "type": "number",
+      "description": "Price per kilogram in ETB"
+    },
+    "total_cost": {
+      "type": "number",
+      "description": "Total purchase cost in ETB"
+    },
+    "purchase_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of purchase"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Partial",
+        "Paid"
+      ],
+      "default": "Pending"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "supplier_name",
+    "coffee_type",
+    "quantity_kg",
+    "price_per_kg",
+    "purchase_date"
+  ]
+}

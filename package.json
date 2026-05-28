@@ -12,7 +12,10 @@
     "preview": "vite preview",
     "db:push": "supabase db push",
     "fn:deploy": "supabase functions deploy",
-    "fn:logs": "supabase functions logs"
+    "fn:logs": "supabase functions logs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.3",
@@ -71,6 +74,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22.13.5",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",

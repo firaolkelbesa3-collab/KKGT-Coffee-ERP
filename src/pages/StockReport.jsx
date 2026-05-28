@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import RoleGuard from '@/components/RoleGuard';
 import { format } from 'date-fns';
 import { computeStockPools } from '@/lib/stockPools';
 import CoffeePoolsCard from '@/components/stock/CoffeePoolsCard';
+import { base44 } from '@/api/supabaseClient';
 
 function fmt(n, d = 0) {
   if (n == null || isNaN(n)) return '—';

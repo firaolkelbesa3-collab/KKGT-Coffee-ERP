@@ -94,14 +94,67 @@ function normalizeList(data) {
   return (data || []).map(addVirtualFields)
 }
 
-// Drop virtual fields + convert empty strings to null for cleaner inserts.
-function cleanPayload(obj) {
+// ---------------------------------------------------------------------------
+// Per-table cleanup rules for writes.
+//
+// `strip` — columns Postgres will reject on write because they are
+//   GENERATED ALWAYS AS (...) STORED, or because a trigger immediately
+//   overwrites them. Sending them adds noise to the wire and can fail.
+//
+// JSON columns are stored as TEXT in this schema (matches the original
+// Base44 entity definitions). The frontend already calls JSON.stringify()
+// before sending, so we pass the string straight through.
+// ---------------------------------------------------------------------------
+const TABLE_RULES = {
+  purchase_records: {
+    // net_feresula is generated; total_paid_etb / balance_etb are set by trigger.
+    strip: ['net_feresula', 'total_paid_etb', 'balance_etb'],
+  },
+  output_reports: {
+    strip: ['export_kg', 'reject_kg'], // generated columns
+  },
+  reject_bag_usages: {
+    strip: ['amount_etb'], // generated column
+  },
+  material_entries: {
+    strip: ['total_cost_etb'], // generated column
+  },
+  material_register_entries: {
+    strip: ['total_cost_etb'], // generated column
+  },
+}
+
+// Drop virtual fields, strip generated/trigger-managed columns, and convert
+// empty strings to null for cleaner inserts.
+function cleanPayload(obj, tableName) {
+  const rules = TABLE_RULES[tableName] || { strip: [] }
+  const strip = new Set(['created_date', 'updated_date', ...rules.strip])
   const clean = {}
   for (const [key, value] of Object.entries(obj)) {
-    if (key === 'created_date' || key === 'updated_date') continue
+    if (strip.has(key)) continue
     clean[key] = value === '' ? null : value
   }
   return clean
+}
+
+// If Postgres rejects an insert/update with "Could not find the 'X' column of
+// 'Y' in the schema cache", peel that column out of the payload and retry.
+// This makes the client resilient to schema drift between the frontend and
+// the DB — we still log a console.warn so the missing column is visible.
+const UNKNOWN_COLUMN_RX = /Could not find the '([^']+)' column of '([^']+)' in the schema cache/i
+async function withUnknownColumnRetry(tableName, payload, runner) {
+  let attempt = { ...payload }
+  for (let i = 0; i < 25; i++) {
+    const { data, error } = await runner(attempt)
+    if (!error) return { data, error: null }
+    const match = error.message && error.message.match(UNKNOWN_COLUMN_RX)
+    if (!match || !(match[1] in attempt)) return { data: null, error }
+    // eslint-disable-next-line no-console
+    console.warn(`[db.${tableName}] dropping unknown column "${match[1]}" and retrying. Add this column to the DB to keep the value.`)
+    const { [match[1]]: _omit, ...rest } = attempt
+    attempt = rest
+  }
+  return { data: null, error: new Error('too many unknown columns; aborting') }
 }
 
 function makeEntity(tableName) {
@@ -143,9 +196,10 @@ function makeEntity(tableName) {
 
     create: async (record) => {
       const { data: { user } } = await supabase.auth.getUser()
-      const payload = cleanPayload({ ...record, created_by: user?.id })
-      const { data, error } = await supabase
-        .from(tableName).insert(payload).select().single()
+      const payload = cleanPayload({ ...record, created_by: user?.id }, tableName)
+      const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
+        supabase.from(tableName).insert(p).select().single()
+      )
       if (error) {
         console.error(`[db.${tableName}.create]`, error.message)
         throw error
@@ -154,9 +208,10 @@ function makeEntity(tableName) {
     },
 
     update: async (id, updates) => {
-      const payload = cleanPayload({ ...updates })
-      const { data, error } = await supabase
-        .from(tableName).update(payload).eq('id', id).select().single()
+      const payload = cleanPayload({ ...updates }, tableName)
+      const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
+        supabase.from(tableName).update(p).eq('id', id).select().single()
+      )
       if (error) {
         console.error(`[db.${tableName}.update]`, error.message)
         throw error

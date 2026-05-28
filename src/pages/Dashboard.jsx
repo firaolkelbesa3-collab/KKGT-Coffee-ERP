@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { ShieldOff } from 'lucide-react';
@@ -8,6 +8,7 @@ import SupplierBalancesTable from '@/components/dashboard/SupplierBalancesTable'
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import BalanceDateFilter, { filterByDateRange } from '@/components/dashboard/BalanceDateFilter';
 import { computeStockPools } from '@/lib/stockPools';
+import { base44 } from '@/api/supabaseClient';
 
 function fmt(n, d = 0) {
   if (n == null || isNaN(n)) return '—';

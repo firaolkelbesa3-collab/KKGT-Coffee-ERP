@@ -1,6 +1,7 @@
-import { useAuth } from '@/lib/AuthContext';
+﻿import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/api/base44Client';
+import { base44 } from '@/api/supabaseClient';
 
 // Role definitions
 export const ROLES = {

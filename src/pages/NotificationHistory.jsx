@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { useRole } from '@/lib/useRole';
@@ -13,6 +13,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import { base44 } from '@/api/supabaseClient';
 
 const PAGE_SIZE = 50;
 

@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useCallback } from 'react';
+﻿import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { calcTotalPaid, calcBalance, calcPaymentStatus } from '@/lib/paymentUtils';
 import { ChevronUp, ChevronDown, ChevronsUpDown, RefreshCw } from 'lucide-react';
+import { base44 } from '@/api/supabaseClient';
 
 function fmt(n, d = 0) {
   if (n == null || isNaN(n)) return '—';

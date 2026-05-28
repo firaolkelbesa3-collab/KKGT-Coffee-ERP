@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import ArchivedRecordsSection from '@/components/shared/ArchivedRecordsSection';
 import { archiveRecord } from '@/lib/archiveService';
 import { logActivity, diffRecords } from '@/lib/activityLogger';
 import TablePagination from '@/components/shared/TablePagination';
+import { base44 } from '@/api/supabaseClient';
 
 function fmt(n, d = 2) {
   if (n == null || isNaN(n)) return '—';

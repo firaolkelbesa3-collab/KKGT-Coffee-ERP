@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import ArchivedRecordsSection from '@/components/shared/ArchivedRecordsSection';
 import { archiveRecord } from '@/lib/archiveService';
 import { logActivity, diffRecords } from '@/lib/activityLogger';
 import { notifyOutputReport } from '@/lib/notificationService';
+import { base44 } from '@/api/supabaseClient';
 
 // PAGE_SIZE replaced by dynamic pageSize state
 

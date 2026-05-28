@@ -1,8 +1,9 @@
-import React from 'react';
+﻿import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { base44 } from '@/api/supabaseClient';
 
 function ActionBadge({ type }) {
   const map = {

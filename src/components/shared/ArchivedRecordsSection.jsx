@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,6 +6,7 @@ import { Archive, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRole } from '@/lib/useRole';
 import { restoreRecord, buildPreviousStateFromChanges } from '@/lib/archiveService';
+import { base44 } from '@/api/supabaseClient';
 
 /**
  * Renders an "Archived Records" section visible only to admin/supervisor.

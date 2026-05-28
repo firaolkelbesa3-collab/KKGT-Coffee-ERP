@@ -1,4 +1,5 @@
-import { supabase } from '@/api/base44Client';
+﻿import { supabase } from '@/api/base44Client';
+import { base44 } from '@/api/supabaseClient';
 
 /**
  * Log an activity. Best-effort — failures should not block business actions.

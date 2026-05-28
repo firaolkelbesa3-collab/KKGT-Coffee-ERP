@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfDay, startOfWeek, startOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import RoleGuard from '@/components/RoleGuard';
 import WRRSummaryCards from '@/components/wrr/WRRSummaryCards';
 import WRRFilterPanel from '@/components/wrr/WRRFilterPanel';
 import WRRDetailPanel from '@/components/wrr/WRRDetailPanel';
+import { base44 } from '@/api/supabaseClient';
 
 const fmt = (n) => (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

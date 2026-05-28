@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import RoleGuard from '@/components/RoleGuard';
 import { computeStockPools } from '@/lib/stockPools';
 import TablePagination from '@/components/shared/TablePagination';
+import { base44 } from '@/api/supabaseClient';
 
 // PAGE_SIZE replaced by dynamic pageSize state
 const REJECTION_REASONS = ['Too Much Moisture', 'Grade Too Low', 'Defects', 'Smell/Taste Issue', 'Other'];

@@ -1,7 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AttachmentSlot } from './FileAttachments';
 import { Warehouse, FileText, Scale } from 'lucide-react';
+import { base44 } from '@/api/supabaseClient';
 
 function SectionHeader({ icon: Icon, label, subtitle }) {
   return (

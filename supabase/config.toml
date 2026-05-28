@@ -1,4 +1,4 @@
-project_id = "kjcrsbpcoqcehefttsua"
+project_id = "xyzfyvymvvhlkuwkclhy"
 
 [api]
 enabled = true
@@ -40,5 +40,5 @@ url = ""
 enabled = true
 file_size_limit = "50MiB"
 
-[functions]
+[functions.send-telegram-message]
 verify_jwt = true

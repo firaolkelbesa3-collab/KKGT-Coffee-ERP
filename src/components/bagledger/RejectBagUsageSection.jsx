@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { Plus, Pencil, Trash2, Recycle, User, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import NumberInput from '@/components/shared/NumberInput';
 import TablePagination from '@/components/shared/TablePagination';
+import { base44 } from '@/api/supabaseClient';
 
 export const REJECT_BAG_PRICE = 153;
 

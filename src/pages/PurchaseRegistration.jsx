@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import { useDuplicateCheck } from '@/hooks/useDuplicateCheck';
 import DuplicateWarningBanner from '@/components/purchases/DuplicateWarningBanner';
 import DuplicateConfirmDialog from '@/components/purchases/DuplicateConfirmDialog';
 import DuplicateReport from '@/components/purchases/DuplicateReport';
+import { base44 } from '@/api/supabaseClient';
 
 function fmt(n, decimals = 2) {
   if (n == null || isNaN(n)) return '—';

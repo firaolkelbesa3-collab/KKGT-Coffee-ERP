@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import RoleGuard from '@/components/RoleGuard';
 import { Save, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { base44 } from '@/api/supabaseClient';
 
 // All screens with their paths
 const SCREENS = [

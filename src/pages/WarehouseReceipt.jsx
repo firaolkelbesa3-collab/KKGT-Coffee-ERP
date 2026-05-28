@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ import { saveReceiptHistory } from '@/lib/warehouseHistoryService';
 import ReceiptInlineHistory from '@/components/warehouse/ReceiptInlineHistory';
 import WarehouseHistoryTab from '@/components/warehouse/WarehouseHistoryTab';
 import { useRole } from '@/lib/useRole';
+import { base44 } from '@/api/supabaseClient';
 
 // PAGE_SIZE replaced by dynamic pageSize state
 

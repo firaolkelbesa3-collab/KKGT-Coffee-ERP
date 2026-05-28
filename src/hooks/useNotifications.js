@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/supabaseClient';
 
 export function useNotifications() {
   const { user } = useAuth();

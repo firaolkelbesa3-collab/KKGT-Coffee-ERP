@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO, isToday, isYesterday, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { Search, Download, FileSpreadsheet, SlidersHorizontal, PlusCircle, Pencil, Archive, RotateCcw, AlertTriangle } from 'lucide-react';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { exportHistoryPDF, exportHistoryExcel } from '@/lib/warehouseHistoryExport';
+import { base44 } from '@/api/supabaseClient';
 
 const PAGE_SIZE = 20;
 

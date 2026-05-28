@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CheckCircle2, ChevronDown, ChevronRight, User, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import SupplierDetailPanel from './SupplierDetailPanel';
+import { base44 } from '@/api/supabaseClient';
 
 export const REJECT_BAG_PRICE = 153;
 const LOSS_PCT = 1;

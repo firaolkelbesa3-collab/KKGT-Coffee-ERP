@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import RoleGuard from '@/components/RoleGuard';
@@ -18,6 +18,7 @@ import PurchaseDetailPanel from '@/components/reports/PurchaseDetailPanel';
 import DateRangePicker from '@/components/shared/DateRangePicker';
 import FilterPanel, { FilterButton } from '@/components/shared/FilterPanel';
 import TablePagination from '@/components/shared/TablePagination';
+import { base44 } from '@/api/supabaseClient';
 
 function fmt(n, d = 2) {
   if (n == null || isNaN(n)) return '—';

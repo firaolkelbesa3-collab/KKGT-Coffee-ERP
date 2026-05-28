@@ -7,6 +7,25 @@
 create extension if not exists "pgcrypto";
 
 -- =========================================================================
+-- Runtime grants
+-- `supabase db push` runs as the `postgres` user, so the default-privilege
+-- machinery that auto-grants new tables to anon/authenticated does NOT apply.
+-- Without explicit grants, every PostgREST request returns 403 even when
+-- RLS would otherwise allow it. We grant once, then ALTER DEFAULT PRIVILEGES
+-- so any tables created later in this migration inherit the same access.
+-- =========================================================================
+grant usage on schema public to anon, authenticated, service_role;
+
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to authenticated, service_role;
+alter default privileges in schema public
+  grant select on tables to anon;
+alter default privileges in schema public
+  grant usage, select on sequences to authenticated, service_role;
+alter default privileges in schema public
+  grant execute on functions to anon, authenticated, service_role;
+
+-- =========================================================================
 -- Helpers
 -- =========================================================================
 create or replace function public.set_updated_at()
@@ -17,16 +36,8 @@ begin
 end;
 $$;
 
-create or replace function public.current_role_name()
-returns text language sql stable security definer set search_path = public as $$
-  select role from public.profiles where id = auth.uid();
-$$;
-
-create or replace function public.is_admin()
-returns boolean language sql stable security definer set search_path = public as $$
-  select coalesce((select role from public.profiles where id = auth.uid())
-                  in ('admin','supervisor'), false);
-$$;
+-- current_role_name() and is_admin() are defined AFTER public.profiles so that
+-- their SQL bodies can be parsed against an existing schema.
 
 -- =========================================================================
 -- profiles (mirrors auth.users)
@@ -59,6 +70,18 @@ begin
   on conflict (id) do nothing;
   return new;
 end;
+$$;
+
+-- Now that public.profiles exists, define role-helper SQL functions used by RLS.
+create or replace function public.current_role_name()
+returns text language sql stable security definer set search_path = public as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select role from public.profiles where id = auth.uid())
+                  in ('admin','supervisor'), false);
 $$;
 
 drop trigger if exists on_auth_user_created on auth.users;
@@ -113,6 +136,7 @@ create table if not exists public.purchase_records (
   grand_total_etb numeric(18,2),
   total_paid_etb numeric(18,2) not null default 0,
   balance_etb numeric(18,2),
+  remark text,
   archived bool not null default false,
   archived_by uuid references auth.users(id),
   archived_at timestamptz,
@@ -719,17 +743,20 @@ alter table public.attachments                 enable row level security;
 
 -- =========================================================================
 -- Policies: drop-then-create for idempotency
+-- Standard shape (4 policies) for every business table that has a
+-- `created_by` column. Tables with different ownership columns
+-- (warehouse_receipt_history, attachments, notification_settings) get
+-- custom policies further down.
 -- =========================================================================
 do $$
 declare
   t text;
   business_tables text[] := array[
-    'suppliers','purchase_records','warehouse_receipts','warehouse_receipt_history',
+    'suppliers','purchase_records','warehouse_receipts',
     'warehouse_inventory','processing_logs','processing_batches','output_reports',
     'export_contracts','exports','purchases','buyer_inspections','sample_logs',
     'bag_receipts','supplier_bag_returns','supplier_bag_payments','supplier_bag_settlements',
-    'reject_bag_usages','material_entries','material_register_entries','attachments',
-    'notification_settings'
+    'reject_bag_usages','material_entries','material_register_entries'
   ];
 begin
   foreach t in array business_tables loop
@@ -743,6 +770,52 @@ begin
     execute format('create policy "%s_delete_admin" on public.%I for delete to authenticated using (public.is_admin())', t, t);
   end loop;
 end $$;
+
+-- warehouse_receipt_history: append-only audit. Anyone authenticated can insert
+-- and read; only admins can mutate or delete.
+drop policy if exists wrh_select_auth on public.warehouse_receipt_history;
+drop policy if exists wrh_insert_auth on public.warehouse_receipt_history;
+drop policy if exists wrh_admin_update on public.warehouse_receipt_history;
+drop policy if exists wrh_admin_delete on public.warehouse_receipt_history;
+create policy wrh_select_auth on public.warehouse_receipt_history
+  for select to authenticated using (true);
+create policy wrh_insert_auth on public.warehouse_receipt_history
+  for insert to authenticated with check (true);
+create policy wrh_admin_update on public.warehouse_receipt_history
+  for update to authenticated using (public.is_admin());
+create policy wrh_admin_delete on public.warehouse_receipt_history
+  for delete to authenticated using (public.is_admin());
+
+-- attachments: owner column is `uploaded_by`.
+drop policy if exists attachments_select_auth on public.attachments;
+drop policy if exists attachments_insert_auth on public.attachments;
+drop policy if exists attachments_update_self_or_admin on public.attachments;
+drop policy if exists attachments_delete_self_or_admin on public.attachments;
+create policy attachments_select_auth on public.attachments
+  for select to authenticated using (true);
+create policy attachments_insert_auth on public.attachments
+  for insert to authenticated with check (true);
+create policy attachments_update_self_or_admin on public.attachments
+  for update to authenticated using (uploaded_by = auth.uid() or public.is_admin());
+create policy attachments_delete_self_or_admin on public.attachments
+  for delete to authenticated using (uploaded_by = auth.uid() or public.is_admin());
+
+-- notification_settings: each user owns their own row, keyed by user_email.
+drop policy if exists ns_select_own on public.notification_settings;
+drop policy if exists ns_upsert_own on public.notification_settings;
+drop policy if exists ns_update_own on public.notification_settings;
+drop policy if exists ns_admin_delete on public.notification_settings;
+create policy ns_select_own on public.notification_settings
+  for select to authenticated
+  using (user_email = (select email from public.profiles where id = auth.uid()) or public.is_admin());
+create policy ns_upsert_own on public.notification_settings
+  for insert to authenticated
+  with check (user_email = (select email from public.profiles where id = auth.uid()));
+create policy ns_update_own on public.notification_settings
+  for update to authenticated
+  using (user_email = (select email from public.profiles where id = auth.uid()) or public.is_admin());
+create policy ns_admin_delete on public.notification_settings
+  for delete to authenticated using (public.is_admin());
 
 -- profiles
 drop policy if exists profiles_self_read on public.profiles;
@@ -807,6 +880,17 @@ create policy suppliers_delete_admin on public.suppliers for delete to authentic
 -- =========================================================================
 -- Seed role_permissions
 -- =========================================================================
+-- Belt-and-braces: explicit grants on every existing table/sequence/function
+-- (covers tables created earlier in this migration, before the ALTER DEFAULT
+-- PRIVILEGES at the top took effect for new objects).
+grant select, insert, update, delete on all tables in schema public
+  to authenticated, service_role;
+grant select on all tables in schema public to anon;
+grant usage, select on all sequences in schema public
+  to authenticated, service_role;
+grant execute on all functions in schema public
+  to anon, authenticated, service_role;
+
 insert into public.role_permissions(role, allowed_paths) values
   ('admin',
    '["/","/purchase-registration","/warehouse-receipt","/sample-log","/processing-log","/output-report","/buyer-inspections","/master-data","/reports","/export-contracts","/materials-register","/bag-ledger","/stock-report","/activity-log","/permissions","/notification-history","/notification-settings","/user-report","/purchase-orders-report","/warehouse-receipt-report","/data-import"]'::jsonb),

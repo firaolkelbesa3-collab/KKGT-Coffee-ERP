@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X, PlusCircle, Pencil, Archive, RotateCcw, AlertTriangle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { base44 } from '@/api/supabaseClient';
 
 function fmtVal(v) {
   if (v === null || v === undefined || v === '') return '—';

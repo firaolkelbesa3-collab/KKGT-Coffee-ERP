@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import NumberInput from '@/components/shared/NumberInput';
 import { exportMaterialsPDF, exportMaterialsExcel, fmt } from '@/lib/materialsExport';
 import TablePagination from '@/components/shared/TablePagination';
+import { base44 } from '@/api/supabaseClient';
 
 const ITEM_TYPES = ['Bag', 'Craft', 'Plaster', 'Green Pro'];
 const BAG_SIZES = ['30kg', '50kg', '60kg'];

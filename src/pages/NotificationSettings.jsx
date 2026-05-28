@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import { useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/supabaseClient';
 
 const ALL_TYPES = [
   { key: 'new_purchase', label: '📦 New Purchase Registered', roles: ['warehouse_keeper'], critical: false },

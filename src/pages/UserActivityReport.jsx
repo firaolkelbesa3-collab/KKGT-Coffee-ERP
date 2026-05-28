@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRole } from '@/lib/useRole';
 import { Navigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ import ActivityUsersTable from '@/components/userreport/ActivityUsersTable';
 import UserDetailPanel from '@/components/userreport/UserDetailPanel';
 import { exportUserReportPDF, exportUserReportExcel } from '@/lib/userReportExport';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { base44 } from '@/api/supabaseClient';
 
 function getThisWeekRange() {
   const now = new Date();

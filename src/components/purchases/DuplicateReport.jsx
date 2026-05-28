@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ShieldAlert, Loader2 } from 'lucide-react';
 import { format, differenceInCalendarDays } from 'date-fns';
+import { base44 } from '@/api/supabaseClient';
 
 function fmt(n) {
   if (n == null || isNaN(n)) return '—';

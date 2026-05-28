@@ -1,8 +1,9 @@
-import React from 'react';
+﻿import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AttachmentSlot, CompactAttachSlot } from './FileAttachments';
 import { parsePayments } from '@/components/purchases/PaymentHistoryPanel';
 import { FileText, Receipt, Warehouse } from 'lucide-react';
+import { base44 } from '@/api/supabaseClient';
 
 function SectionHeader({ icon: Icon, label, subtitle }) {
   return (

@@ -31,8 +31,10 @@ async function alreadyFired(type, entityId) {
   } catch { return false; }
 }
 
-/** Send Telegram message — fire-and-forget, never throws */
+/** Send Telegram message — fire-and-forget, never throws.
+ * Suppressed in demo mode so random visitors can't spam the team channel. */
 async function sendTelegram(message) {
+  if (import.meta.env.VITE_DEMO_MODE === 'true') return;
   try {
     await base44.functions.invoke('send-telegram-message', { message });
   } catch { /* never block in-app notifications on Telegram failure */ }

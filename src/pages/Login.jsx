@@ -1,10 +1,16 @@
 import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { auth } from "@/api/supabaseClient";
+import { DEMO_MODE } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogIn, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function Login() {
+  // In demo mode there's no real login — AuthContext auto-signs every visitor in.
+  // Anyone who lands here gets sent straight to the dashboard.
+  if (DEMO_MODE) return <Navigate to="/" replace />;
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 

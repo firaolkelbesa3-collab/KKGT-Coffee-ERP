@@ -16,7 +16,11 @@ const ETB_TOL = 1;
 const KG_TOL = 0.05;
 
 function num(v) {
-  const n = Number(v);
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  if (v == null) return 0;
+  // Strip thousands separators, currency, %, spaces — Excel exports are formatted.
+  const cleaned = String(v).replace(/[^0-9.\-]/g, '');
+  const n = Number(cleaned);
   return Number.isFinite(n) ? n : 0;
 }
 function parseJsonArray(v) {

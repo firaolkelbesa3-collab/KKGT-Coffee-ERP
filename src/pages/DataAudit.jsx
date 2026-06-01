@@ -19,29 +19,32 @@ const RECON_ENTITIES = {
   PurchaseRecord: {
     label: 'Purchase Records',
     keyField: 'coffee_code',
+    keyAliases: ['coffee code', 'code'],
     fields: [
-      { field: 'supplier_name', label: 'Supplier', numeric: false },
-      { field: 'net_dispatch_weight_kg', label: 'Dispatch KG', numeric: true },
-      { field: 'unit_price_etb_per_feresula', label: 'Unit Price', numeric: true },
-      { field: 'grand_total_etb', label: 'Grand Total ETB', numeric: true },
-      { field: 'total_paid_etb', label: 'Total Paid ETB', numeric: true },
-      { field: 'balance_etb', label: 'Balance ETB', numeric: true },
+      { field: 'supplier_name', label: 'Supplier', numeric: false, aliases: ['supplier', 'supplier name'] },
+      { field: 'net_dispatch_weight_kg', label: 'Dispatch KG', numeric: true, aliases: ['net kg', 'dispatch kg', 'net dispatch', 'dispatch weight'] },
+      { field: 'unit_price_etb_per_feresula', label: 'Unit Price', numeric: true, aliases: ['unit price', 'price'] },
+      { field: 'grand_total_etb', label: 'Grand Total ETB', numeric: true, aliases: ['grand total etb', 'grand total'] },
+      { field: 'total_paid_etb', label: 'Total Paid ETB', numeric: true, aliases: ['total paid etb', 'total paid', 'paid'] },
+      { field: 'balance_etb', label: 'Balance ETB', numeric: true, aliases: ['balance etb', 'balance'] },
     ],
   },
   Supplier: {
     label: 'Suppliers',
     keyField: 'supplier_name',
+    keyAliases: ['supplier', 'supplier name', 'name'],
     fields: [
-      { field: 'region', label: 'Region', numeric: false },
-      { field: 'opening_stock_kg', label: 'Opening Stock KG', numeric: true },
+      { field: 'region', label: 'Region', numeric: false, aliases: ['region'] },
+      { field: 'opening_stock_kg', label: 'Opening Stock KG', numeric: true, aliases: ['opening stock', 'opening stock kg', 'opening'] },
     ],
   },
   WarehouseReceipt: {
     label: 'Warehouse Receipts',
     keyField: 'coffee_code',
+    keyAliases: ['coffee code', 'code'],
     fields: [
-      { field: 'warehouse_received_net_kg', label: 'Received KG', numeric: true },
-      { field: 'bags_received', label: 'Bags', numeric: true },
+      { field: 'warehouse_received_net_kg', label: 'Received KG', numeric: true, aliases: ['received kg', 'net kg', 'warehouse received', 'received net kg'] },
+      { field: 'bags_received', label: 'Bags', numeric: true, aliases: ['bags', 'bags received'] },
     ],
   },
 };
@@ -51,13 +54,29 @@ const SEVERITY = {
   warning: { label: 'Warning', icon: AlertTriangle, cls: 'text-amber-700 bg-amber-50 border-amber-200' },
 };
 
-// Fuzzy header → app field auto-mapping.
-function guessColumn(headers, field, label) {
-  const targets = [field, label].map(s => s.toLowerCase().replace(/[^a-z0-9]/g, ''));
+// Fuzzy header → app field auto-mapping (checks field name, label, and aliases).
+function guessColumn(headers, field, label, aliases = []) {
+  const targets = [field, label, ...aliases]
+    .filter(Boolean)
+    .map(s => String(s).toLowerCase().replace(/[^a-z0-9]/g, ''))
+    .filter(t => t.length >= 3);
   return headers.find(h => {
-    const n = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const n = String(h).toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (n.length < 3) return false; // skip junk headers like "#"
     return targets.some(t => n === t || n.includes(t) || t.includes(n));
   }) || '';
+}
+
+// Excel exports often have title rows before the real header. Pick the row
+// (within the first 15) with the most non-empty cells as the header row.
+function detectHeaderRow(aoa) {
+  let best = 0, bestCount = 0;
+  const limit = Math.min(aoa.length, 15);
+  for (let i = 0; i < limit; i++) {
+    const count = (aoa[i] || []).filter(c => c != null && String(c).trim() !== '').length;
+    if (count > bestCount) { bestCount = count; best = i; }
+  }
+  return best;
 }
 
 export default function DataAudit() {
@@ -115,22 +134,34 @@ export default function DataAudit() {
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array', cellDates: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    // Collect headers across all rows and drop empty/whitespace-only ones —
-    // a blank Excel header would create a <SelectItem value=""> which crashes Radix.
-    const headerSet = new Set();
-    rows.forEach(r => Object.keys(r).forEach(k => {
-      if (k != null && String(k).trim() !== '') headerSet.add(k);
-    }));
-    const headers = [...headerSet];
+    // Read as a grid so we can skip title rows and find the real header row.
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    const headerIdx = detectHeaderRow(aoa);
+    const rawHeaders = (aoa[headerIdx] || []).map(h => String(h).trim());
+    // De-duplicate + drop blanks (blank header → crashing empty SelectItem value).
+    const headers = [];
+    const seen = new Set();
+    rawHeaders.forEach((h, i) => {
+      if (h && !seen.has(h)) { seen.add(h); headers.push(h); }
+      else if (h && seen.has(h)) { const u = `${h} (${i})`; seen.add(u); headers.push(u); }
+    });
+    // Build row objects from the data rows below the header.
+    const rows = aoa.slice(headerIdx + 1)
+      .filter(r => r.some(c => c != null && String(c).trim() !== ''))
+      .map(r => {
+        const obj = {};
+        rawHeaders.forEach((h, i) => { if (h) obj[h] = r[i]; });
+        return obj;
+      });
+
     setExcelRows(rows);
     setExcelHeaders(headers);
     setFileName(file.name);
     setReconResult(null);
-    // Auto-map key + fields by header name.
-    setKeyCol(guessColumn(headers, cfg.keyField, cfg.label) || headers[0] || '');
+    // Auto-map key + fields by header name / label / aliases.
+    setKeyCol(guessColumn(headers, cfg.keyField, cfg.label, cfg.keyAliases) || headers[0] || '');
     const m = {};
-    cfg.fields.forEach(f => { m[f.field] = guessColumn(headers, f.field, f.label); });
+    cfg.fields.forEach(f => { m[f.field] = guessColumn(headers, f.field, f.label, f.aliases); });
     setColMap(m);
   };
 

@@ -322,20 +322,24 @@ function makeEntity(tableName) {
       try { user = (await supabase.auth.getUser()).data.user } catch { /* offline — getUser may fail */ }
       const payload = cleanPayload({ ...record, created_by: user?.id }, tableName)
 
-      // Queue ONLY when the browser is explicitly offline. When online we use
-      // the exact same path as before Phase 2.5 — any error is surfaced, never
-      // silently queued, so a real RLS/constraint error can't masquerade as
-      // "saved but nothing happened".
+      // Explicitly offline → queue immediately.
       if (isOffline()) return enqueueOptimisticCreate(tableName, payload)
 
-      const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
-        supabase.from(tableName).insert(p).select().single()
-      )
-      if (error) {
-        console.error(`[db.${tableName}.create]`, error.message)
-        throw error
+      try {
+        const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
+          supabase.from(tableName).insert(p).select().single()
+        )
+        if (error) throw error
+        return addVirtualFields(data)
+      } catch (err) {
+        // navigator.onLine often lies (reports online with no actual internet).
+        // A genuine connectivity failure surfaces as a TypeError "Failed to fetch"
+        // — queue it. A real DB error (RLS/constraint) is a structured Postgrest
+        // error (has .code / non-TypeError) — rethrow so the user sees it.
+        if (isNetworkError(err)) return enqueueOptimisticCreate(tableName, payload)
+        console.error(`[db.${tableName}.create]`, err.message)
+        throw err
       }
-      return addVirtualFields(data)
     },
 
     update: async (id, updates) => {
@@ -343,14 +347,17 @@ function makeEntity(tableName) {
 
       if (isOffline()) return enqueueOptimisticUpdate(tableName, id, payload)
 
-      const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
-        supabase.from(tableName).update(p).eq('id', id).select().single()
-      )
-      if (error) {
-        console.error(`[db.${tableName}.update]`, error.message)
-        throw error
+      try {
+        const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
+          supabase.from(tableName).update(p).eq('id', id).select().single()
+        )
+        if (error) throw error
+        return addVirtualFields(data)
+      } catch (err) {
+        if (isNetworkError(err)) return enqueueOptimisticUpdate(tableName, id, payload)
+        console.error(`[db.${tableName}.update]`, err.message)
+        throw err
       }
-      return addVirtualFields(data)
     },
 
     delete: async (id) => {

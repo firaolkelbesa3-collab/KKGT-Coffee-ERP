@@ -25,6 +25,9 @@ export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 const DEMO_EMAIL = 'demo@kkgt.demo';
 const DEMO_PASSWORD = 'KkgtDemoPublic2026!';
 
+// Last-known profile (role) cached so it survives offline reloads.
+const PROFILE_CACHE_KEY = 'kkgt-profile-cache';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,14 +41,34 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', supabaseUser.id)
         .single();
+      if (error) throw error;
       setUser({ ...supabaseUser, ...(profile || {}), email: supabaseUser.email });
+      // Cache the role so it survives offline (the profile fetch fails with no
+      // network, which would otherwise drop the role and bounce admins to the
+      // Pending Approval screen).
+      try {
+        localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+          id: supabaseUser.id,
+          role: profile?.role,
+          full_name: profile?.full_name,
+          email: supabaseUser.email,
+        }));
+      } catch { /* storage full / unavailable — non-fatal */ }
     } catch {
-      setUser(supabaseUser);
+      // Offline or fetch failed — fall back to the last-known cached profile
+      // so the user keeps their role and isn't kicked to Pending Approval.
+      let cached = null;
+      try { cached = JSON.parse(localStorage.getItem(PROFILE_CACHE_KEY) || 'null'); } catch { /* ignore */ }
+      if (cached && cached.id === supabaseUser.id) {
+        setUser({ ...supabaseUser, ...cached, email: supabaseUser.email });
+      } else {
+        setUser(supabaseUser);
+      }
     }
     setIsAuthenticated(true);
   };
@@ -89,6 +112,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     await supabase.auth.signOut();
+    try { localStorage.removeItem(PROFILE_CACHE_KEY); } catch { /* ignore */ }
     setUser(null);
     setIsAuthenticated(false);
     // In demo mode, logging out is meaningless — bounce back to the dashboard.

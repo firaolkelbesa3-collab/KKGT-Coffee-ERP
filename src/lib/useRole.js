@@ -16,7 +16,7 @@ export const ROLES = {
 // Admin/Supervisor always have full access — this is the canonical list
 export const ADMIN_ROUTES = [
   '/', '/purchase-registration', '/warehouse-receipt', '/sample-log', '/processing-log',
-  '/output-report', '/buyer-inspections', '/master-data', '/reports', '/export-contracts',
+  '/output-report', '/buyer-inspections', '/master-data', '/reports', '/profit-loss', '/export-contracts',
   '/materials-register', '/bag-ledger', '/stock-report', '/activity-log', '/permissions',
   '/notification-history', '/notification-settings', '/user-report', '/purchase-orders-report',
   '/warehouse-receipt-report', '/data-import', '/data-audit',
@@ -31,7 +31,7 @@ const DEFAULT_ROLE_ROUTES = {
   warehouse_keeper: ['/', '/warehouse-receipt', '/sample-log', '/stock-report', '/bag-ledger', '/materials-register'],
   process_manager:  ['/', '/processing-log', '/stock-report'],
   final_registrar:  ['/', '/output-report', '/stock-report', '/export-contracts', '/buyer-inspections'],
-  export_manager:   ['/', '/export-contracts', '/buyer-inspections', '/stock-report', '/materials-register', '/bag-ledger', '/sample-log'],
+  export_manager:   ['/', '/export-contracts', '/buyer-inspections', '/stock-report', '/materials-register', '/bag-ledger', '/sample-log', '/profit-loss'],
 };
 
 export function useRole() {

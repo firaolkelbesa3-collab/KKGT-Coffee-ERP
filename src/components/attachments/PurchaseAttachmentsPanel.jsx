@@ -43,6 +43,7 @@ export default function PurchaseAttachmentsPanel({ purchase }) {
       section,
       section_ref: sectionRef || '',
       file_url: att.file_url,
+      storage_path: att.storage_path || att.file_url,
       file_name: att.file_name,
       file_size: att.file_size,
       uploaded_at: att.uploaded_at,
@@ -70,6 +71,8 @@ export default function PurchaseAttachmentsPanel({ purchase }) {
           emptyLabel="Upload signed contract"
           subtext="PDF, JPG, PNG · Max 10 MB"
           attachments={contractDocs}
+          entityType="purchase_record"
+          entityId={purchase.id}
           onAdd={handleAdd('contract_document', 'signed_contract')}
           onDelete={handleDelete}
         />
@@ -113,9 +116,10 @@ export default function PurchaseAttachmentsPanel({ purchase }) {
                   {/* Compact attach slot for this CPV */}
                   <CompactAttachSlot
                     attachments={slotAtts}
+                    entityType="purchase_record"
+                    entityId={purchase.id}
                     onAdd={handleAdd('payment_voucher', ref)}
                     onDelete={handleDelete}
-                    cpvRef={ref}
                   />
                 </div>
               );
@@ -134,8 +138,10 @@ export default function PurchaseAttachmentsPanel({ purchase }) {
         <AttachmentSlot
           label=""
           emptyLabel="Upload GRN certificate"
-          subtext={`PDF, JPG, PNG · Max 10 MB · GRN code will be used as filename prefix`}
+          subtext={`PDF, JPG, PNG · Max 10 MB`}
           attachments={grnDocs}
+          entityType="purchase_record"
+          entityId={purchase.id}
           onAdd={handleAdd('grn_certificate', purchase.coffee_code || 'grn')}
           onDelete={handleDelete}
         />

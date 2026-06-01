@@ -419,18 +419,48 @@ export const functions = {
   },
 }
 
-// File uploads are intentionally disabled in v1. v1.1 will wire Supabase Storage.
-class AttachmentsDisabledError extends Error {
-  constructor() {
-    super('File attachments are coming in v1.1. Uploads are temporarily disabled.')
-    this.name = 'AttachmentsDisabledError'
-    this.code = 'ATTACHMENTS_DISABLED'
-  }
-}
+// ---------------------------------------------------------------------------
+// Document Vault — real file uploads to the private 'attachments' Storage bucket.
+// Files are stored under entity-scoped paths; the stored `file_url` is the
+// storage PATH (bucket is private), and viewing creates a short-lived signed URL.
+// ---------------------------------------------------------------------------
+const ATTACH_BUCKET = 'attachments'
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic']
 
 export const integrations = {
   Core: {
-    UploadFile: async () => { throw new AttachmentsDisabledError() },
+    UploadFile: async ({ file, entityType = 'misc', entityId = 'general' }) => {
+      if (!file) throw new Error('No file provided')
+      if (file.size > MAX_UPLOAD_BYTES) throw new Error('File too large — maximum is 10 MB')
+      if (file.type && !ALLOWED_MIME.includes(file.type)) {
+        // Some browsers omit type for HEIC; allow by extension as a fallback.
+        if (!/\.(pdf|jpe?g|png|webp|heic)$/i.test(file.name || '')) {
+          throw new Error('Only PDF or image files are allowed')
+        }
+      }
+      const ext = (file.name?.split('.').pop() || 'bin').toLowerCase()
+      const uid = crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`
+      const path = `${entityType}/${entityId}/${uid}.${ext}`
+      const { error } = await supabase.storage.from(ATTACH_BUCKET).upload(path, file, {
+        cacheControl: '3600', upsert: false, contentType: file.type || undefined,
+      })
+      if (error) { console.error('[UploadFile]', error.message); throw error }
+      return { file_url: path, storage_path: path }
+    },
+
+    // Create a short-lived signed URL to view/download a private file.
+    getSignedUrl: async (path, expiresIn = 3600) => {
+      if (!path) return null
+      const { data, error } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(path, expiresIn)
+      if (error) { console.warn('[getSignedUrl]', error.message); return null }
+      return data?.signedUrl || null
+    },
+
+    removeFile: async (path) => {
+      if (!path) return
+      await supabase.storage.from(ATTACH_BUCKET).remove([path]).catch(() => {})
+    },
   },
 }
 

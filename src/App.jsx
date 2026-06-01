@@ -38,6 +38,7 @@ const PurchaseOrdersReport = lazy(() => import('@/pages/PurchaseOrdersReport'));
 const WarehouseReceiptReport = lazy(() => import('@/pages/WarehouseReceiptReport'));
 const DataImport = lazy(() => import('@/pages/DataImport.jsx'));
 const DataAudit = lazy(() => import('@/pages/DataAudit.jsx'));
+const ProfitLoss = lazy(() => import('@/pages/ProfitLoss.jsx'));
 
 const RouteFallback = () => (
   <div className="flex items-center justify-center py-24">
@@ -80,6 +81,7 @@ const AuthenticatedApp = () => {
           <Route path="/processing-log" element={<ProcessingLogPage />} />
           <Route path="/output-report" element={<OutputReportPage />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/profit-loss" element={<ProfitLoss />} />
           <Route path="/buyer-inspections" element={<BuyerInspections />} />
           <Route path="/export-contracts" element={<ExportContracts />} />
           <Route path="/materials-register" element={<MaterialsRegister />} />

@@ -24,6 +24,10 @@ dist-ssr
 .supabase
 .branches
 
+# Playwright artifacts
+playwright-report
+test-results
+
 # editor / OS
 .vscode/*
 !.vscode/extensions.json

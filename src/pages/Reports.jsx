@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import { exportPDF, exportXLSX } from '@/lib/exportUtils';
+import { exportStatementPDF } from '@/lib/reportEngine';
 import { parsePayments } from '@/components/purchases/PaymentHistoryPanel';
 import { calcTotalPaid, calcBalance, calcPaymentStatus } from '@/lib/paymentUtils';
 import PurchaseDetailPanel from '@/components/reports/PurchaseDetailPanel';
@@ -476,7 +477,7 @@ function SupplierBalanceReport({ purchases, suppliers }) {
         return { ...pay, runningBalance };
       });
 
-      return { name: displayName, lotCount, totalPurchased, totalPaid, balance, bankBreakdown, paymentRowsWithBalance };
+      return { name: displayName, lotCount, totalPurchased, totalPaid, balance, bankBreakdown, paymentRowsWithBalance, lots, allPayments };
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [suppliers, purchases, fromDate, toDate, supplier]);
 
@@ -510,9 +511,22 @@ function SupplierBalanceReport({ purchases, suppliers }) {
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">Grand Total: {fmt(r.totalPurchased)} ETB</p>
             </div>
-            <div className="flex gap-6 text-sm">
+            <div className="flex items-center gap-6 text-sm">
               <div><p className="text-xs text-muted-foreground">Total Paid</p><p className="font-bold text-primary">{fmt(r.totalPaid)} ETB</p></div>
               <div><p className="text-xs text-muted-foreground">Balance</p><p className={`font-bold ${r.balance > 0 ? 'text-destructive' : 'text-green-700'}`}>{fmt(r.balance)} ETB</p></div>
+              <Button
+                size="sm" variant="outline" className="gap-1.5 press"
+                onClick={() => {
+                  const master = suppliers.find(s => (s.supplier_name || '').toLowerCase() === r.name.toLowerCase()) || {};
+                  exportStatementPDF(
+                    { name: r.name, region: master.region, agent: master.agent, phone: master.phone_number },
+                    r.lots, r.allPayments,
+                    { period: fromDate || toDate ? `${fromDate || 'start'} – ${toDate || 'today'}` : 'All time' }
+                  );
+                }}
+              >
+                <FileText className="w-3.5 h-3.5" /> Statement
+              </Button>
             </div>
           </div>
 

@@ -309,3 +309,134 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
   const buf = await wb.xlsx.writeBuffer();
   triggerDownload(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${filename}.xlsx`);
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Statement of Account (professional supplier/agent statement)
+// ───────────────────────────────────────────────────────────────────────────
+const money = (n) => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/**
+ * Professional Statement of Account PDF.
+ * @param {object} party    — { name, region, agent, phone }
+ * @param {Array}  lots     — purchase records: { coffee_code, purchase_date, grand_total_etb }
+ * @param {Array}  payments — flat payments: { payment_date, amount_etb, bank_name, cpv_reference|reference_no, coffee_code }
+ * @param {object} opts     — { period, filename }
+ */
+export function exportStatementPDF(party, lots = [], payments = [], opts = {}) {
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' }); // portrait
+  const pageW = doc.internal.pageSize.getWidth();
+  const today = format(new Date(), 'dd MMM yyyy');
+
+  // Build a chronological ledger: charges (purchases) increase the balance,
+  // payments decrease it. Running balance = what we still owe the supplier.
+  const entries = [];
+  lots.forEach(l => {
+    entries.push({
+      date: l.purchase_date || l.created_date || '',
+      ref: l.coffee_code || '',
+      desc: 'Coffee purchase',
+      charge: Number(l.grand_total_etb) || 0,
+      payment: 0,
+    });
+  });
+  payments.forEach(p => {
+    entries.push({
+      date: p.payment_date || '',
+      ref: p.cpv_reference || p.reference_no || p.coffee_code || '',
+      desc: `Payment${p.bank_name ? ' — ' + p.bank_name : ''}`,
+      charge: 0,
+      payment: Number(p.amount_etb) || 0,
+    });
+  });
+  entries.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+  let running = 0;
+  const body = entries.map(e => {
+    running += e.charge - e.payment;
+    return [
+      e.date ? format(new Date(e.date), 'dd/MM/yyyy') : '—',
+      e.ref || '—',
+      e.desc,
+      e.charge ? money(e.charge) : '',
+      e.payment ? money(e.payment) : '',
+      money(running),
+    ];
+  });
+
+  const totalCharges = entries.reduce((s, e) => s + e.charge, 0);
+  const totalPayments = entries.reduce((s, e) => s + e.payment, 0);
+  const balance = totalCharges - totalPayments;
+
+  // ── Header band ──
+  doc.setFillColor(...COFFEE_RGB);
+  doc.rect(0, 0, pageW, 70, 'F');
+  try { doc.addImage(LOGO_PNG_DATAURL, 'PNG', 32, 14, 42, 42); } catch { /* optional */ }
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(17);
+  doc.text('Coffee ERP', 86, 32);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  doc.setTextColor(220, 200, 180);
+  doc.text('Coffee Supply Chain', 86, 47);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text('STATEMENT OF ACCOUNT', pageW - 32, 34, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  doc.setTextColor(220, 200, 180);
+  doc.text(`Statement date: ${today}`, pageW - 32, 50, { align: 'right' });
+  if (opts.period) doc.text(`Period: ${opts.period}`, pageW - 32, 62, { align: 'right' });
+
+  // ── Party block ──
+  let y = 92;
+  doc.setTextColor(80, 80, 80); doc.setFontSize(8);
+  doc.text('STATEMENT FOR', 32, y);
+  doc.setTextColor(20, 20, 20); doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+  doc.text(party.name || '—', 32, y + 16);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(90, 90, 90);
+  const meta = [party.region && `Region: ${party.region}`, party.agent && `Agent: ${party.agent}`, party.phone && `Phone: ${party.phone}`]
+    .filter(Boolean).join('    ');
+  if (meta) doc.text(meta, 32, y + 30);
+
+  // ── Summary boxes ──
+  y += 48;
+  const boxW = (pageW - 64 - 24) / 3;
+  const boxes = [
+    { label: 'TOTAL PURCHASES', value: money(totalCharges), fill: [246, 240, 233], text: [46, 26, 18] },
+    { label: 'TOTAL PAID', value: money(totalPayments), fill: [246, 240, 233], text: [46, 26, 18] },
+    { label: 'BALANCE DUE (ETB)', value: money(balance), fill: AMBER_RGB, text: [46, 26, 18] },
+  ];
+  boxes.forEach((b, i) => {
+    const x = 32 + i * (boxW + 12);
+    doc.setFillColor(...b.fill); doc.roundedRect(x, y, boxW, 46, 4, 4, 'F');
+    doc.setTextColor(110, 90, 70); doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
+    doc.text(b.label, x + 10, y + 16);
+    doc.setTextColor(...b.text); doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+    doc.text(b.value, x + 10, y + 35);
+  });
+
+  // ── Ledger table ──
+  autoTable(doc, {
+    startY: y + 60,
+    head: [['Date', 'Reference', 'Description', 'Charges (ETB)', 'Payments (ETB)', 'Balance (ETB)']],
+    body,
+    foot: [['', '', 'CLOSING BALANCE', money(totalCharges), money(totalPayments), money(balance)]],
+    margin: { left: 32, right: 32, bottom: 50 },
+    styles: { fontSize: 8, cellPadding: 4, valign: 'middle' },
+    headStyles: { fillColor: COFFEE_RGB, textColor: [255, 255, 255], fontStyle: 'bold' },
+    footStyles: { fillColor: AMBER_RGB, textColor: [46, 26, 18], fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: ROW_ALT_RGB },
+    columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
+    didDrawPage: () => {
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(7); doc.setTextColor(120, 120, 120);
+      doc.text('Coffee ERP · Statement of Account · Confidential', 32, pageH - 28);
+      doc.text(`Generated ${today}`, pageW - 32, pageH - 28, { align: 'right' });
+      // Signature line
+      doc.setDrawColor(180, 180, 180);
+      doc.line(pageW - 200, pageH - 16, pageW - 32, pageH - 16);
+      doc.text('Authorized signature', pageW - 116, pageH - 6, { align: 'center' });
+    },
+  });
+
+  const safe = (party.name || 'supplier').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  doc.save(`statement-${safe}-${format(new Date(), 'yyyyMMdd')}.pdf`);
+}

@@ -7,12 +7,14 @@ import { LogIn, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function Login() {
+  // Hooks must run unconditionally and in the same order every render — declare
+  // them before any early return.
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   // In demo mode there's no real login — AuthContext auto-signs every visitor in.
   // Anyone who lands here gets sent straight to the dashboard.
   if (DEMO_MODE) return <Navigate to="/" replace />;
-
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleGoogle = async () => {
     setError("");

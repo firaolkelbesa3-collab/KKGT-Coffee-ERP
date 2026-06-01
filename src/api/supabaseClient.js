@@ -149,7 +149,7 @@ async function withUnknownColumnRetry(tableName, payload, runner) {
     if (!error) return { data, error: null }
     const match = error.message && error.message.match(UNKNOWN_COLUMN_RX)
     if (!match || !(match[1] in attempt)) return { data: null, error }
-    // eslint-disable-next-line no-console
+     
     console.warn(`[db.${tableName}] dropping unknown column "${match[1]}" and retrying. Add this column to the DB to keep the value.`)
     const { [match[1]]: _omit, ...rest } = attempt
     attempt = rest

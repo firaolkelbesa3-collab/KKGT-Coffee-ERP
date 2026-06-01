@@ -33,12 +33,13 @@ export function StatusBadge({ status }) {
 export default function DataTable({ columns, data, isLoading, onRowClick, emptyMessage = "No data found" }) {
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <Table>
+      <div className="rounded-xl border border-border bg-card overflow-hidden w-full max-w-full">
+      <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="bg-muted/50">
               {columns.map((col, i) => (
-                <TableHead key={i} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <TableHead key={i} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                   {col.header}
                 </TableHead>
               ))}
@@ -55,13 +56,14 @@ export default function DataTable({ columns, data, isLoading, onRowClick, emptyM
           </TableBody>
         </Table>
       </div>
+      </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="overflow-x-auto">
-        <Table>
+    <div className="rounded-xl border border-border bg-card overflow-hidden w-full max-w-full">
+      <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               {columns.map((col, i) => (

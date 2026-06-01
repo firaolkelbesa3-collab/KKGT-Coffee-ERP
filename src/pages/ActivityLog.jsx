@@ -1,5 +1,6 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { useAuth } from '@/lib/AuthContext';
 import { useRole } from '@/lib/useRole';
@@ -11,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Search, ShieldOff } from 'lucide-react';
 import { format } from 'date-fns';
 import TablePagination from '@/components/shared/TablePagination';
-import { base44 } from '@/api/supabaseClient';
 
 const ACTIONS = ['Created', 'Edited', 'Archived', 'Restored'];
 

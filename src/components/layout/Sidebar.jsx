@@ -218,7 +218,7 @@ export default function Sidebar() {
       {/* ════════════════════════════════════════
           MOBILE BOTTOM TAB BAR
       ════════════════════════════════════════ */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-border z-50 flex items-center justify-around pt-2">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-border z-50 flex items-center justify-around pt-2 pb-safe min-h-16">
         {MOBILE_GROUPS.map(group => {
           if (!isGroupVisible(group)) return null;
           const active = isGroupActive(group);

@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ import { format } from 'date-fns';
 import RoleGuard from '@/components/RoleGuard';
 import { computeStockPools } from '@/lib/stockPools';
 import TablePagination from '@/components/shared/TablePagination';
-import { base44 } from '@/api/supabaseClient';
+import ActiveFilters from '@/components/shared/ActiveFilters';
 
 // PAGE_SIZE replaced by dynamic pageSize state
 const REJECTION_REASONS = ['Too Much Moisture', 'Grade Too Low', 'Defects', 'Smell/Taste Issue', 'Other'];
@@ -358,6 +359,12 @@ export default function BuyerInspections() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input className="pl-9" placeholder="Search by buyer, coffee type, result..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
+        <ActiveFilters
+          filters={[
+            { label: 'Search', value: search || '', onRemove: () => { setSearch(''); setPage(1); } },
+          ]}
+          onClearAll={() => { setSearch(''); setPage(1); }}
+        />
 
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">

@@ -133,6 +133,7 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
   const [materialRows, setMaterialRows] = useState([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingData, setPendingData] = useState(null);
+  const [originalDestination, setOriginalDestination] = useState('');
   const [kgError, setKgError] = useState('');
 
   const isEdit = !!initialData;
@@ -141,6 +142,7 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
     if (!open) return;
     if (initialData) {
       setForm({ ...initialData });
+      setOriginalDestination(initialData.destination_country || '');
       setStockPool(initialData.stock_pool || 'Fresh');
       // detect pricing method
       setPricingMethod(initialData.pricing_method || (initialData.price_per_lb_usd ? 'per_lb' : 'per_kg'));
@@ -261,6 +263,8 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!coffeeType) { setKgError('Please select a coffee type.'); return; }
+    if (pricingMethod === 'per_lb' && !(pricePerLb > 0)) { setKgError('Price per LB is required.'); return; }
+    if (pricingMethod === 'per_kg' && !(pricePerKg > 0)) { setKgError('Price per KG is required.'); return; }
     const maxKg = isEdit ? availForEdit : availKg;
     if (maxKg != null && exportKg > maxKg) {
       setKgError(`Exceeds available stock. Maximum: ${fmt(maxKg, 0)} KG.`);
@@ -511,7 +515,7 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
                   <>
                     <div className="space-y-1">
                       <Label className="text-xs font-medium">Price per LB (USD) *</Label>
-                      <NumberInput decimals={6} value={form.price_per_lb_usd || ''} onChange={v => set('price_per_lb_usd', v)} required className="h-10" placeholder="0.000000" />
+                      <NumberInput decimals={6} value={form.price_per_lb_usd != null && form.price_per_lb_usd !== '' ? form.price_per_lb_usd : ''} onChange={v => set('price_per_lb_usd', v)} required className="h-10" placeholder="0.000000" />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Conversion Rate (fixed)</Label>
@@ -520,10 +524,13 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
                     <RO label="Total LB (auto)" value={`${fmt(totalLb, 3)} LB`} />
                   </>
                 ) : (
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium">Price per KG (USD) *</Label>
-                    <NumberInput decimals={4} value={form.price_per_kg_usd || ''} onChange={v => set('price_per_kg_usd', v)} required className="h-10" placeholder="0.0000" />
-                  </div>
+                  <>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium">Price per KG (USD) *</Label>
+                      <NumberInput decimals={4} value={form.price_per_kg_usd != null && form.price_per_kg_usd !== '' ? form.price_per_kg_usd : ''} onChange={v => set('price_per_kg_usd', v)} required className="h-10" placeholder="0.0000" />
+                    </div>
+                    <RO label="Total LB (ref)" value={`${fmt(totalLb, 3)} LB`} />
+                  </>
                 )}
               </div>
 
@@ -669,6 +676,11 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
               {pendingData?.remaining != null && (
                 <span className={`block font-semibold ${pendingData.remaining > 0 ? 'text-amber-700' : 'text-green-700'}`}>
                   Available stock will reduce to <strong>{fmt(pendingData.remaining, 0)} KG</strong>.
+                </span>
+              )}
+              {isEdit && originalDestination && form.destination_country !== originalDestination && (
+                <span className="block mt-2 p-2 rounded bg-amber-50 border border-amber-300 text-amber-800 font-semibold">
+                  ⚠️ Destination is being changed from <strong>{originalDestination}</strong> → <strong>{form.destination_country}</strong>. Make sure this is correct before confirming.
                 </span>
               )}
             </AlertDialogDescription>

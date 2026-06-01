@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,11 +27,11 @@ import { getPurchaseWarnings } from '@/lib/formWarnings';
 import { notifyNewPurchase } from '@/lib/notificationService';
 import NumberInput from '@/components/shared/NumberInput';
 import TablePagination from '@/components/shared/TablePagination';
+import ActiveFilters from '@/components/shared/ActiveFilters';
 import { useDuplicateCheck } from '@/hooks/useDuplicateCheck';
 import DuplicateWarningBanner from '@/components/purchases/DuplicateWarningBanner';
 import DuplicateConfirmDialog from '@/components/purchases/DuplicateConfirmDialog';
 import DuplicateReport from '@/components/purchases/DuplicateReport';
-import { base44 } from '@/api/supabaseClient';
 
 function fmt(n, decimals = 2) {
   if (n == null || isNaN(n)) return '—';
@@ -150,7 +151,7 @@ function AdditionalCostsEditor({ costs, onChange }) {
 const EMPTY_FORM = {
   coffee_code: '', purchase_date: '', supplier_name: '', agent: '', region: '',
   coffee_type: '', net_dispatch_weight_kg: '',
-  unit_price_etb_per_feresula: '', commission_percent: '', remark: '',
+  unit_price_etb_per_feresula: '', commission_percent: '0', remark: '',
 };
 
 function PurchaseFormDialog({ open, onOpenChange, initialData, suppliers, allRecords, receipts, onSubmit, isSubmitting }) {
@@ -182,7 +183,7 @@ function PurchaseFormDialog({ open, onOpenChange, initialData, suppliers, allRec
           coffee_type: initialData.coffee_type || '',
           net_dispatch_weight_kg: initialData.net_dispatch_weight_kg ?? '',
           unit_price_etb_per_feresula: initialData.unit_price_etb_per_feresula ?? '',
-          commission_percent: initialData.commission_percent ?? '',
+          commission_percent: initialData.commission_percent ?? 0,
           remark: initialData.remark || '',
         });
         setPayments(parsePayments(initialData));
@@ -215,10 +216,14 @@ function PurchaseFormDialog({ open, onOpenChange, initialData, suppliers, allRec
     setForm(prev => ({
       ...prev,
       supplier_name: supplierName,
-      agent: supplier?.agent || '',
-      region,
-      coffee_type: supplier?.coffee_type || '',
       coffee_code: code,
+      // In edit mode: keep the stored agent, region, coffee_type exactly as-is
+      // In new mode only: auto-fill from Master Data
+      ...(initialData ? {} : {
+        agent: supplier?.agent || '',
+        region,
+        coffee_type: supplier?.coffee_type || '',
+      }),
     }));
   };
 
@@ -664,6 +669,12 @@ export default function PurchaseRegistration() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input className="pl-9" placeholder="Search by supplier, code, date..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
       </div>
+      <ActiveFilters
+        filters={[
+          { label: 'Search', value: search || '', onRemove: () => { setSearch(''); setPage(1); } },
+        ]}
+        onClearAll={() => { setSearch(''); setPage(1); }}
+      />
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto w-full">
@@ -736,7 +747,7 @@ export default function PurchaseRegistration() {
                       <TableCell className="text-right">{fmt(p.net_dispatch_weight_kg, 2)}</TableCell>
                       <TableCell className="text-right">{fmt(p.net_feresula, 4)}</TableCell>
                       <TableCell className="text-right">{fmt(p.unit_price_etb_per_feresula, 2)}</TableCell>
-                      <TableCell className="text-right">{p.commission_percent != null ? `${p.commission_percent}%` : '—'}</TableCell>
+                      <TableCell className="text-right">{(p.commission_percent != null && p.commission_percent !== '') ? `${p.commission_percent}%` : '0%'}</TableCell>
                       <TableCell className="text-right">{fmt(totalCosts, 2)}</TableCell>
                       <TableCell className="text-right font-semibold">
                         {!receipt ? (
@@ -750,7 +761,7 @@ export default function PurchaseRegistration() {
                         {!receipt ? (
                           <span className="text-muted-foreground text-xs italic">—</span>
                         ) : (
-                          liveBalance != null ? (liveBalance === 0 ? '0.00' : fmt(liveBalance, 2)) : '—'
+                          liveBalance != null ? (Math.abs(liveBalance) <= 1 ? '0.00' : fmt(liveBalance, 2)) : '—'
                         )}
                       </TableCell>
                       <TableCell>

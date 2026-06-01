@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,10 +25,10 @@ import { notifyWarehouseReceipt } from '@/lib/notificationService';
 import NumberInput from '@/components/shared/NumberInput';
 import TablePagination from '@/components/shared/TablePagination';
 import { saveReceiptHistory } from '@/lib/warehouseHistoryService';
+import { computeAvailabilityBySupplier } from '@/lib/availabilityUtils';
 import ReceiptInlineHistory from '@/components/warehouse/ReceiptInlineHistory';
 import WarehouseHistoryTab from '@/components/warehouse/WarehouseHistoryTab';
 import { useRole } from '@/lib/useRole';
-import { base44 } from '@/api/supabaseClient';
 
 // PAGE_SIZE replaced by dynamic pageSize state
 
@@ -49,7 +50,7 @@ const EMPTY_FORM = {
   grn_code: '', dispatch_no: '', received_date: todayStr(), remark: '',
 };
 
-function ReceiptFormDialog({ open, onOpenChange, initialData, purchases, sampleSumBySupplier, processingSumBySupplier, allReceipts, onSubmit, isSubmitting }) {
+function ReceiptFormDialog({ open, onOpenChange, initialData, purchases, availabilityBySupplier, allReceipts, onSubmit, isSubmitting }) {
   const [form, setForm] = useState(EMPTY_FORM);
   // Track whether Net Dispatch KG came from a matched purchase (true) or from the
   // legacy stored value (false). Used to show "— (purchase not linked)" when nothing matches.
@@ -109,9 +110,14 @@ function ReceiptFormDialog({ open, onOpenChange, initialData, purchases, sampleS
   const dispatchKg = parseFloat(form.net_dispatch_weight_kg) || 0;
   const shrinkageKg = receivedKg - dispatchKg;
   const formWarnings = useMemo(() => getWarehouseWarnings(form, allReceipts || []), [form, allReceipts]);
-  const samplesKg = sampleSumBySupplier?.[form.supplier_name] || 0;
-  const processingKg = processingSumBySupplier?.[form.supplier_name] || 0;
-  const netRemainingKg = receivedKg - samplesKg - processingKg;
+  // Use the canonical availability breakdown for the currently selected supplier
+  const supplierAvail = availabilityBySupplier?.[form.supplier_name];
+  const samplesKg = supplierAvail?.samplesKg || 0;
+  const processingKg = supplierAvail?.processedKg || 0;
+  // Net Coffee KG = combined total for this supplier (from availabilityBySupplier), not per-receipt
+  const supplierNetCoffeeKg = supplierAvail?.netCoffeeKg || 0;
+  // For the Net Remaining box show the canonical available KG for this supplier
+  const netRemainingKg = supplierAvail?.availableKg ?? (supplierNetCoffeeKg - samplesKg - processingKg);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -216,12 +222,12 @@ function ReceiptFormDialog({ open, onOpenChange, initialData, purchases, sampleS
         <Textarea value={form.remark} onChange={e => set('remark', e.target.value)} rows={2} placeholder="Optional..." />
       </div>
 
-      {form.warehouse_received_net_kg !== '' && (
+      {form.supplier_name && supplierAvail && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-3 flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-green-800 uppercase tracking-wide">Net Remaining KG</p>
-            <p className="text-[10px] text-green-700 mt-0.5">Received KG − Samples KG − Processing KG Sent</p>
-            <p className="text-[10px] text-green-600 mt-0.5">{fmt(receivedKg)} − {fmt(samplesKg)} − {fmt(processingKg)}</p>
+            <p className="text-xs font-semibold text-green-800 uppercase tracking-wide">Net Remaining KG (Supplier Total)</p>
+            <p className="text-[10px] text-green-700 mt-0.5">Warehouse Received KG − Samples KG − Processing KG Sent</p>
+            <p className="text-[10px] text-green-600 mt-0.5">({fmt(supplierNetCoffeeKg)} − {fmt(samplesKg)} − {fmt(processingKg)})</p>
           </div>
           <span className={`text-xl font-bold ${netRemainingKg < 0 ? 'text-destructive' : 'text-green-700'}`}>
             {fmt(netRemainingKg)} KG
@@ -315,17 +321,23 @@ export default function WarehouseReceiptPage() {
   // Archived records must never be included in supplier-level aggregates
   const notArchived = (x) => x?.archived !== true;
 
+  // Canonical per-supplier availability used everywhere on this page
+  const availabilityBySupplier = useMemo(() => computeAvailabilityBySupplier({
+    receipts: receipts.filter(notArchived),
+    purchases,
+    sampleLogs: sampleLogs.filter(notArchived),
+    processingLogs: processingLogs.filter(notArchived),
+  }), [receipts, purchases, sampleLogs, processingLogs]);
+
+  // Still need sampleSumBySupplier for the table's "Samples KG" column display
   const sampleSumBySupplier = useMemo(() => {
     const map = {};
-    sampleLogs.filter(notArchived).forEach(s => { if (s.supplier_name) map[s.supplier_name] = (map[s.supplier_name] || 0) + (s.sample_kg || 0); });
+    sampleLogs.filter(notArchived).forEach(s => {
+      if (s.supplier_name && (!s.sample_type || s.sample_type === 'Warehouse'))
+        map[s.supplier_name] = (map[s.supplier_name] || 0) + (s.sample_kg || 0);
+    });
     return map;
   }, [sampleLogs]);
-
-  const processingSumBySupplier = useMemo(() => {
-    const map = {};
-    processingLogs.filter(notArchived).forEach(p => { if (p.supplier_name) map[p.supplier_name] = (map[p.supplier_name] || 0) + (p.actual_weighed_kg ?? p.kg_sent ?? 0); });
-    return map;
-  }, [processingLogs]);
 
   const purchaseByCode = useMemo(() => {
     const map = {};
@@ -339,26 +351,12 @@ export default function WarehouseReceiptPage() {
     return map;
   }, [allAttachments]);
 
-  // Supplier-level total received KG (sum of all lots for that supplier) — archived excluded
-  const receivedTotalBySupplier = useMemo(() => {
-    const map = {};
-    receipts.filter(notArchived).forEach(r => {
-      if (r.supplier_name) map[r.supplier_name] = (map[r.supplier_name] || 0) + (r.warehouse_received_net_kg || 0);
-    });
-    return map;
-  }, [receipts]);
-
-  // Supplier-level remaining = total received − total samples − total processing (never negative)
+  // Flat remaining map derived from canonical availability
   const remainingBySupplier = useMemo(() => {
     const map = {};
-    Object.keys(receivedTotalBySupplier).forEach(name => {
-      const received = receivedTotalBySupplier[name] || 0;
-      const samples = sampleSumBySupplier[name] || 0;
-      const processing = processingSumBySupplier[name] || 0;
-      map[name] = Math.max(0, received - samples - processing);
-    });
+    Object.entries(availabilityBySupplier).forEach(([name, v]) => { map[name] = v.availableKg; });
     return map;
-  }, [receivedTotalBySupplier, sampleSumBySupplier, processingSumBySupplier]);
+  }, [availabilityBySupplier]);
 
   // Sync bag receipt for a given warehouse receipt (create / update / delete the linked BagReceipt)
   const syncBagReceipt = async (receipt) => {
@@ -720,9 +718,8 @@ export default function WarehouseReceiptPage() {
         onOpenChange={v => { setDialogOpen(v); if (!v) setEditRecord(null); }}
         initialData={editRecord}
         purchases={purchases}
+        availabilityBySupplier={availabilityBySupplier}
         allReceipts={receipts}
-        sampleSumBySupplier={sampleSumBySupplier}
-        processingSumBySupplier={processingSumBySupplier}
         onSubmit={data => {
           if (editRecord) updateMutation.mutate({ id: editRecord.id, data, previous: editRecord });
           else createMutation.mutate(data);

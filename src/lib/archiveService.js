@@ -1,6 +1,5 @@
-﻿import { supabase } from '@/api/base44Client';
+import { base44 } from '@/api/base44Client';
 import { logActivity } from '@/lib/activityLogger';
-import { base44 } from '@/api/supabaseClient';
 
 /**
  * Build an archive patch (does NOT call entity update — caller does).

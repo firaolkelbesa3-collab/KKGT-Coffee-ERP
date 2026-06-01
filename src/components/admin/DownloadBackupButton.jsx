@@ -1,13 +1,13 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import { parsePayments } from '@/components/purchases/PaymentHistoryPanel';
 import { calcTotalPaid, calcBalance, calcPaymentStatus } from '@/lib/paymentUtils';
 import { toast } from 'sonner';
-import { base44 } from '@/api/supabaseClient';
 
 function fmtNum(n) {
   if (n == null || isNaN(n)) return '';

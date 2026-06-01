@@ -1,16 +1,19 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export default function StatCard({ title, value, subtitle, icon: Icon, trend, trendUp, className }) {
+export default function StatCard({ title, value, subtitle, icon: Icon, trend, trendUp, className, index = 0 }) {
   return (
-    <div className={cn(
-      "bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow",
-      className
-    )}>
+    <div
+      className={cn(
+        "bg-card rounded-xl border border-border p-5 card-lift stagger-item",
+        className
+      )}
+      style={{ animationDelay: `${Math.min(index, 8) * 50}ms` }}
+    >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold text-foreground">{value}</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums">{value}</p>
           {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
         </div>
         {Icon && (

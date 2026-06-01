@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +22,14 @@ import NumberInput from '@/components/shared/NumberInput';
 import RichArchiveDialog from '@/components/shared/RichArchiveDialog';
 import ArchivedRecordsSection from '@/components/shared/ArchivedRecordsSection';
 import { archiveRecord } from '@/lib/archiveService';
+import { computeAvailabilityBySupplier } from '@/lib/availabilityUtils';
 import { logActivity, diffRecords } from '@/lib/activityLogger';
 import TablePagination from '@/components/shared/TablePagination';
-import { base44 } from '@/api/supabaseClient';
+import { BAG_WEIGHT_KG } from '@/lib/constants';
+import ProcessingSummaryBar from '@/components/processing/ProcessingSummaryBar';
+import ActiveFilters from '@/components/shared/ActiveFilters';
+import ExportBar from '@/components/shared/ExportBar';
+import { exportPDF, exportXLSX } from '@/lib/exportUtils';
 
 function fmt(n, d = 2) {
   if (n == null || isNaN(n)) return '—';
@@ -120,7 +126,7 @@ function ProcessingFormDialog({ open, onOpenChange, initialData, suppliers, avai
   };
 
   const bags = parseFloat(form.bags_sent) || 0;
-  const assumedKg = bags * 85;
+  const assumedKg = bags * BAG_WEIGHT_KG;
   const actualKg = parseFloat(form.actual_weighed_kg) || 0;
   const variance = actualKg > 0 && bags > 0 ? actualKg - assumedKg : null;
 
@@ -216,7 +222,7 @@ function ProcessingFormDialog({ open, onOpenChange, initialData, suppliers, avai
     } else if (isByKg) {
       // Feature 5: By-KG entry — store equivalent bags as reference, no bag rounding.
       data.supplier_name = form.supplier_name;
-      data.bags_sent = actualKg > 0 ? actualKg / 85 : null;
+      data.bags_sent = actualKg > 0 ? actualKg / BAG_WEIGHT_KG : null;
       data.kg_sent = null;            // No assumed-KG line in By-KG mode
       data.batch_variance_kg = null;  // No variance — exact KG was entered
       data.buyer_name = null;
@@ -443,63 +449,16 @@ export default function ProcessingLogPage() {
     queryFn: () => base44.entities.PurchaseRecord.list('-created_date', 500),
   });
 
-  // Full availability breakdown per supplier (received / samples / processed components).
-  // The receipt → supplier resolution uses a 3-step fallback so we never miss a receipt:
-  //   1. receipt.supplier_name (most receipts have this)
-  //   2. purchase_record_id → PurchaseRecord.supplier_name
-  //   3. coffee_code → PurchaseRecord.supplier_name
+  // Full availability breakdown per supplier — uses shared canonical formula.
   const availabilityBySupplier = useMemo(() => {
-    const purchaseById = {};
-    const purchaseByCode = {};
-    purchases.forEach(p => {
-      if (p.id) purchaseById[p.id] = p;
-      if (p.coffee_code) purchaseByCode[p.coffee_code] = p;
-    });
-
-    const resolveSupplier = (r) =>
-      r.supplier_name ||
-      (r.purchase_record_id && purchaseById[r.purchase_record_id]?.supplier_name) ||
-      (r.coffee_code && purchaseByCode[r.coffee_code]?.supplier_name) ||
-      null;
-
-    const receivedMap = {};
-    receipts.forEach(r => {
-      const name = resolveSupplier(r);
-      if (name) receivedMap[name] = (receivedMap[name] || 0) + (r.warehouse_received_net_kg || 0);
-    });
-    const samplesMap = {};
-    // Only Warehouse-type samples deduct from supplier stock. Export Inspection samples deduct from coffee-type pool, not supplier.
-    sampleLogs.forEach(s => {
-      if (s.supplier_name && (s.sample_type || 'Warehouse') === 'Warehouse') {
-        samplesMap[s.supplier_name] = (samplesMap[s.supplier_name] || 0) + (s.sample_kg || 0);
-      }
-    });
-    const procMap = {};
-    // Recleaning entries do NOT consume fresh supplier stock — exclude them here.
-    logs.forEach(p => {
-      if (p.supplier_name && p.entry_type !== 'Recleaning') {
-        procMap[p.supplier_name] = (procMap[p.supplier_name] || 0) + (p.actual_weighed_kg ?? p.kg_sent ?? 0);
-      }
-    });
-
+    const raw = computeAvailabilityBySupplier({ receipts, purchases, sampleLogs, processingLogs: logs });
+    // Reshape to { received, samples, processed } for backwards-compat with the form
     const map = {};
-    // Include all suppliers known anywhere — Supplier master, Purchases, Receipts, Samples, Processing.
-    const allNames = new Set([
-      ...suppliers.map(s => s.supplier_name).filter(Boolean),
-      ...purchases.map(p => p.supplier_name).filter(Boolean),
-      ...Object.keys(receivedMap),
-      ...Object.keys(samplesMap),
-      ...Object.keys(procMap),
-    ]);
-    allNames.forEach(name => {
-      map[name] = {
-        received: receivedMap[name] || 0,
-        samples: samplesMap[name] || 0,
-        processed: procMap[name] || 0,
-      };
+    Object.entries(raw).forEach(([name, v]) => {
+      map[name] = { received: v.netCoffeeKg, samples: v.samplesKg, processed: v.processedKg };
     });
     return map;
-  }, [receipts, sampleLogs, logs, purchases, suppliers]);
+  }, [receipts, sampleLogs, logs, purchases]);
 
   const remainingBySupplier = useMemo(() => {
     const map = {};
@@ -524,7 +483,7 @@ export default function ProcessingLogPage() {
       setDialogOpen(false);
       logActivity({ action_type: 'Created', screen_name: 'Processing Log', entity_type: 'ProcessingLog', entity_id: log.id, record_description: `Processing ${log.date} — ${log.supplier_name || log.buyer_name || ''}` });
       if (log.supplier_name) {
-        const bagKg = (log.bags_sent || 0) * 85;
+        const bagKg = (log.bags_sent || 0) * BAG_WEIGHT_KG;
         const currentRemaining = remainingBySupplier[log.supplier_name] || 0;
         const afterRemaining = Math.max(0, currentRemaining - bagKg);
         if (afterRemaining < 500) {
@@ -647,6 +606,41 @@ export default function ProcessingLogPage() {
           onApply={v => { setFilters(v); setPage(1); }}
           onReset={() => { setFilters({ date: { from: '', to: '' }, supplier: 'all', mode: 'all', batchNo: '' }); setPage(1); }}
         />
+        <ActiveFilters
+          filters={[
+            { label: 'Search', value: search || '', onRemove: () => { setSearch(''); setPage(1); } },
+            { label: 'Date', value: filters.date.from || filters.date.to ? `${filters.date.from || '…'} → ${filters.date.to || '…'}` : '', onRemove: () => { setFilters(f => ({ ...f, date: { from: '', to: '' } })); setPage(1); } },
+            { label: 'Supplier', value: filters.supplier !== 'all' ? filters.supplier : '', onRemove: () => { setFilters(f => ({ ...f, supplier: 'all' })); setPage(1); } },
+            { label: 'Mode', value: filters.mode !== 'all' ? filters.mode : '', onRemove: () => { setFilters(f => ({ ...f, mode: 'all' })); setPage(1); } },
+            { label: 'Batch', value: filters.batchNo || '', onRemove: () => { setFilters(f => ({ ...f, batchNo: '' })); setPage(1); } },
+          ]}
+          onClearAll={() => { setSearch(''); setFilters({ date: { from: '', to: '' }, supplier: 'all', mode: 'all', batchNo: '' }); setPage(1); }}
+        />
+        <ExportBar
+          onPDF={() => {
+            const exportHeaders = ['#', 'Date', 'Type', 'Supplier / Buyer', 'Coffee Type', 'Bags', 'Assumed KG', 'Actual KG', 'Variance KG', 'Batch No', 'Remark'];
+            const exportRows = filtered.map((r, i) => {
+              const actualKg = r.actual_weighed_kg ?? r.kg_sent ?? 0;
+              const assumedKg = r.kg_sent ?? ((r.bags_sent || 0) * BAG_WEIGHT_KG);
+              const variance = r.batch_variance_kg ?? (actualKg > 0 && assumedKg > 0 ? actualKg - assumedKg : null);
+              return [i+1, r.date || '—', r.entry_type || 'Standard', r.supplier_name || r.buyer_name || '—', r.coffee_type || supplierMap[r.supplier_name]?.coffee_type || '—', r.bags_sent != null ? r.bags_sent : '—', assumedKg > 0 ? assumedKg.toFixed(0) : '—', actualKg.toFixed(2), variance != null ? (variance >= 0 ? '+' : '') + variance.toFixed(2) : '—', r.batch_no || '—', r.remark || '—'];
+            });
+            const totalActual = filtered.reduce((s, r) => s + (r.actual_weighed_kg ?? r.kg_sent ?? 0), 0);
+            exportPDF('Processing Log', exportHeaders, exportRows, ['', 'TOTAL', '', '', '', '', '', totalActual.toFixed(2), '', '', '']);
+          }}
+          onXLSX={() => {
+            const exportHeaders = ['#', 'Date', 'Type', 'Supplier / Buyer', 'Coffee Type', 'Bags', 'Assumed KG', 'Actual KG', 'Variance KG', 'Batch No', 'Remark'];
+            const exportRows = filtered.map((r, i) => {
+              const actualKg = r.actual_weighed_kg ?? r.kg_sent ?? 0;
+              const assumedKg = r.kg_sent ?? ((r.bags_sent || 0) * BAG_WEIGHT_KG);
+              const variance = r.batch_variance_kg ?? (actualKg > 0 && assumedKg > 0 ? actualKg - assumedKg : null);
+              return [i+1, r.date || '—', r.entry_type || 'Standard', r.supplier_name || r.buyer_name || '—', r.coffee_type || supplierMap[r.supplier_name]?.coffee_type || '—', r.bags_sent ?? '—', assumedKg > 0 ? assumedKg : '—', actualKg, variance ?? '—', r.batch_no || '—', r.remark || '—'];
+            });
+            const totalActual = filtered.reduce((s, r) => s + (r.actual_weighed_kg ?? r.kg_sent ?? 0), 0);
+            exportXLSX('Processing_Log', 'Processing Log', exportHeaders, exportRows, ['', 'TOTAL', '', '', '', '', '', totalActual, '', '', '']);
+          }}
+        />
+        <ProcessingSummaryBar entries={filtered} />
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -670,7 +664,7 @@ export default function ProcessingLogPage() {
                   <TableRow><TableCell colSpan={COLS.length} className="text-center py-12 text-muted-foreground">{search ? 'No entries match.' : 'No processing log entries yet.'}</TableCell></TableRow>
                 ) : paginated.map((r, i) => {
                   const actualKg = r.actual_weighed_kg ?? r.kg_sent ?? 0;
-                  const assumedKg = r.kg_sent ?? ((r.bags_sent || 0) * 85);
+                  const assumedKg = r.kg_sent ?? ((r.bags_sent || 0) * BAG_WEIGHT_KG);
                   const variance = r.batch_variance_kg ?? (actualKg > 0 && assumedKg > 0 ? actualKg - assumedKg : null);
                   return (
                     <TableRow key={r.id} className={`hover:bg-muted/30 ${r.entry_type === 'Recleaning' ? 'bg-amber-50/40' : ''}`}>

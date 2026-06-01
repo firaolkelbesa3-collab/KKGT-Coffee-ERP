@@ -1,8 +1,9 @@
-﻿import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import { calcTotalPaid, calcBalance, calcPaymentStatus } from '@/lib/paymentUtils';
 import { ChevronUp, ChevronDown, ChevronsUpDown, RefreshCw } from 'lucide-react';
-import { base44 } from '@/api/supabaseClient';
+import { computeAvailabilityBySupplier } from '@/lib/availabilityUtils';
 
 function fmt(n, d = 0) {
   if (n == null || isNaN(n)) return '—';
@@ -45,6 +46,10 @@ export default function SupplierBalancesTable({ dateRange }) {
   const { data: receipts = [] } = useQuery({ queryKey: ['warehouse-receipts'], queryFn: () => base44.entities.WarehouseReceipt.list('-created_date', 500), ...queryOpts });
   const { data: sampleLogs = [] } = useQuery({ queryKey: ['sample-logs'], queryFn: () => base44.entities.SampleLog.list(), ...queryOpts });
   const { data: processingLogs = [] } = useQuery({ queryKey: ['processing-logs'], queryFn: () => base44.entities.ProcessingLog.list(), ...queryOpts });
+  // Pre-compute availability using the canonical formula (for warehouse waste display)
+  const availMap = useMemo(() => computeAvailabilityBySupplier({
+    receipts, purchases: purchaseRecords, sampleLogs, processingLogs,
+  }), [receipts, purchaseRecords, sampleLogs, processingLogs]);
 
   const refresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['purchase-records'] });
@@ -82,35 +87,15 @@ export default function SupplierBalancesTable({ dateRange }) {
       map[p.supplier_name].totalPaid += calcTotalPaid(p);
     });
 
-    // Received KG per supplier (from warehouse receipts)
-    const receivedMap = {};
-    receipts.filter(notArchived).forEach(r => {
-      if (r.supplier_name) receivedMap[r.supplier_name] = (receivedMap[r.supplier_name] || 0) + (r.warehouse_received_net_kg || 0);
-    });
-
-    // Samples KG per supplier
-    const samplesMap = {};
-    sampleLogs.filter(notArchived).forEach(s => {
-      if (s.supplier_name) samplesMap[s.supplier_name] = (samplesMap[s.supplier_name] || 0) + (s.sample_kg || 0);
-    });
-
-    // Actual processing KG per supplier (from ProcessingLog)
-    const procMap = {};
-    processingLogs.filter(notArchived).forEach(p => {
-      if (p.supplier_name) procMap[p.supplier_name] = (procMap[p.supplier_name] || 0) + (p.actual_weighed_kg ?? p.kg_sent ?? 0);
-    });
-
     return Object.entries(map).map(([name, v]) => {
-      const received = receivedMap[name] || 0;
-      const samples = samplesMap[name] || 0;
-      const actualProc = procMap[name] || 0;
-      // Waste only applies to suppliers where processing has actually started
-      const rawWaste = actualProc > 0 ? received - samples - actualProc : 0;
+      const av = availMap[name] || { netCoffeeKg: 0, samplesKg: 0, processedKg: 0, availableKg: 0 };
+      // Warehouse waste = net coffee KG - samples - processing (only when processing has started)
+      const rawWaste = av.processedKg > 0 ? av.netCoffeeKg - av.samplesKg - av.processedKg : 0;
       const warehouseWaste = Math.max(0, rawWaste);
       const wasteNegative = rawWaste < 0;
       const balanceDisplay = calcBalance(v.grandTotal, v.totalPaid) ?? 0;
       const status = calcPaymentStatus(v.grandTotal, v.totalPaid) ?? 'Unpaid';
-      return { name, lots: v.lots, actualProc, warehouseWaste, wasteNegative, balance: balanceDisplay, totalPaid: v.totalPaid, grandTotal: v.grandTotal, status };
+      return { name, lots: v.lots, actualProc: av.processedKg, warehouseWaste, wasteNegative, balance: balanceDisplay, totalPaid: v.totalPaid, grandTotal: v.grandTotal, status };
     });
   }, [purchaseRecords, receipts, sampleLogs, processingLogs, dateRange]);
 
@@ -175,7 +160,7 @@ export default function SupplierBalancesTable({ dateRange }) {
                 <TH label="Supplier" col="name" />
                 <TH label="Lots" col="lots" />
                 <TH label="Actual Processing KG" col="actualProc" right />
-                <TH label="Warehouse Waste KG" col="warehouseWaste" right />
+                <TH label="Available KG" col="warehouseWaste" right />
                 <TH label="Balance ETB" col="balance" right />
                 <TH label="Status" col="status" />
               </tr>
@@ -192,7 +177,7 @@ export default function SupplierBalancesTable({ dateRange }) {
                     {r.wasteNegative ? '⚠️ ' : ''}{fmt(r.warehouseWaste)}
                   </td>
                   <td className={`px-3 py-2.5 text-right font-semibold ${r.balance > 1 ? (r.totalPaid <= 0 ? 'text-destructive' : 'text-amber-600') : 'text-green-700'}`}>
-                    {r.balance > 1 ? fmt(r.balance, 2) : '—'}
+                    {r.balance > 1 ? fmt(r.balance, 2) : '0.00'}
                   </td>
                   <td className="px-3 py-2.5"><StatusBadge status={r.status} /></td>
                 </tr>

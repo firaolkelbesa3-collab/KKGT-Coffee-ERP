@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,8 +18,8 @@ import TablePagination from '@/components/shared/TablePagination';
 import RichArchiveDialog from '@/components/shared/RichArchiveDialog';
 import ArchivedRecordsSection from '@/components/shared/ArchivedRecordsSection';
 import { archiveRecord } from '@/lib/archiveService';
+import { computeAvailabilityBySupplier } from '@/lib/availabilityUtils';
 import { logActivity, diffRecords } from '@/lib/activityLogger';
-import { base44 } from '@/api/supabaseClient';
 
 // PAGE_SIZE replaced by dynamic pageSize state
 
@@ -108,11 +109,15 @@ function SampleFormDialog({ open, onOpenChange, initialData, suppliers, coffeeTy
   } else if (isExportInspection || isExport) {
     available = form.coffee_type ? (freshStockByType[form.coffee_type] ?? null) : null;
   } else {
-    available = form.supplier_name ? (availableBySupplier[form.supplier_name] ?? null) : null;
+    available = form.supplier_name
+      ? (form.supplier_name in availableBySupplier ? availableBySupplier[form.supplier_name] : undefined)
+      : null;
+    // undefined means supplier has no warehouse receipt at all
   }
   const sampleKg = parseFloat(form.sample_kg) || 0;
   const kgIsZeroOrEmpty = form.sample_kg === '' || sampleKg <= 0;
-  const exceedsStock = available != null && sampleKg > available && sampleKg > 0;
+  const availableNum = (available !== null && available !== undefined) ? available : null;
+  const exceedsStock = availableNum != null && sampleKg > availableNum && sampleKg > 0;
   const missingTypeField = isExportInspection
     ? !form.coffee_type
     : isExport
@@ -256,12 +261,22 @@ function SampleFormDialog({ open, onOpenChange, initialData, suppliers, coffeeTy
             </div>
           )}
 
-          {(form.supplier_name || form.coffee_type || form.warehouse_receipt_id) && <StockBadge available={available} />}
+          {(form.supplier_name || form.coffee_type || form.warehouse_receipt_id) && <StockBadge available={availableNum} />}
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">
               Available KG ({isExport ? 'Coffee type fresh pool' : isArrival ? 'from linked receipt' : isExportInspection ? 'Fresh stock pool' : 'from Warehouse'})
             </Label>
-            <Input value={available != null ? fmt(available) : '—'} readOnly className="bg-muted font-medium" />
+            <Input
+              value={
+                available === undefined
+                  ? 'No warehouse receipt found'
+                  : available != null
+                    ? fmt(available)
+                    : '—'
+              }
+              readOnly
+              className={`font-medium ${available === undefined ? 'bg-amber-50 text-amber-700 italic' : 'bg-muted'}`}
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Sample KG Taken *</Label>
@@ -271,7 +286,7 @@ function SampleFormDialog({ open, onOpenChange, initialData, suppliers, coffeeTy
           {exceedsStock && (
             <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-destructive/10 border border-destructive/40 text-destructive">
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span className="font-semibold text-sm">⛔ BLOCKED: You entered {fmt(sampleKg)} KG but only {fmt(available)} KG is available for this supplier. Please correct before saving.</span>
+              <span className="font-semibold text-sm">⛔ BLOCKED: You entered {fmt(sampleKg)} KG but only {fmt(availableNum)} KG is available for this supplier. Please correct before saving.</span>
             </div>
           )}
           <div className="space-y-1.5">
@@ -327,6 +342,10 @@ export default function SampleLogPage() {
     queryKey: ['output-reports'],
     queryFn: () => base44.entities.OutputReport.list(),
   });
+  const { data: purchases = [] } = useQuery({
+    queryKey: ['purchase-records'],
+    queryFn: () => base44.entities.PurchaseRecord.list('-created_date', 500),
+  });
   const { data: contracts = [] } = useQuery({
     queryKey: ['export-contracts'],
     queryFn: () => base44.entities.ExportContract.list(),
@@ -347,15 +366,10 @@ export default function SampleLogPage() {
   );
 
   const availableBySupplier = useMemo(() => {
-    const receivedMap = {};
-    receipts.forEach(r => { if (r.supplier_name) receivedMap[r.supplier_name] = (receivedMap[r.supplier_name] || 0) + (r.warehouse_received_net_kg || 0); });
-    const samplesMap = {};
-    logs.forEach(s => { if (s.supplier_name) samplesMap[s.supplier_name] = (samplesMap[s.supplier_name] || 0) + (s.sample_kg || 0); });
-    const procMap = {};
-    processingLogs.forEach(p => { if (p.supplier_name) procMap[p.supplier_name] = (procMap[p.supplier_name] || 0) + (p.kg_sent || 0); });
+    const raw = computeAvailabilityBySupplier({ receipts, purchases, sampleLogs: logs, processingLogs });
+    // Return flat map: supplierName -> availableKg
     const result = {};
-    const allNames = new Set([...Object.keys(receivedMap), ...Object.keys(samplesMap), ...Object.keys(procMap)]);
-    allNames.forEach(name => { result[name] = (receivedMap[name] || 0) - (samplesMap[name] || 0) - (procMap[name] || 0); });
+    Object.entries(raw).forEach(([name, v]) => { result[name] = v.availableKg; });
     return result;
   }, [receipts, logs, processingLogs]);
 

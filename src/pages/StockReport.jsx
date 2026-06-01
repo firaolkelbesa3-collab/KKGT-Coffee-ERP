@@ -1,14 +1,17 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Input } from '@/components/ui/input';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { exportXLSX } from '@/lib/exportUtils';
 import FilterPanel, { FilterButton } from '@/components/shared/FilterPanel';
 import RoleGuard from '@/components/RoleGuard';
 import { format } from 'date-fns';
 import { computeStockPools } from '@/lib/stockPools';
+import { computeAvailabilityBySupplier } from '@/lib/availabilityUtils';
 import CoffeePoolsCard from '@/components/stock/CoffeePoolsCard';
-import { base44 } from '@/api/supabaseClient';
 
 function fmt(n, d = 0) {
   if (n == null || isNaN(n)) return '—';
@@ -87,12 +90,13 @@ function CoffeeTypeCard({ data, lastRefresh }) {
   );
 }
 
-// ── Supplier Card (existing) ──────────────────────────────────────────────────
+// ── Supplier Card ─────────────────────────────────────────────────────────────
 function SupplierCard({ c }) {
   const pct = c.received > 0 ? Math.min(100, (c.remainingDisplay / c.received) * 100) : 0;
-  const colorClass = c.remaining <= 0 ? 'text-muted-foreground' : c.remaining < 500 ? 'text-red-600' : c.remaining < 5000 ? 'text-amber-600' : 'text-green-700';
+  const colorClass = c.remainingDisplay === 0 ? 'text-muted-foreground' : c.remainingDisplay < 500 ? 'text-red-600' : c.remainingDisplay < 5000 ? 'text-amber-600' : 'text-green-700';
+  const procExceedsReceived = c.actualProc > (c.received - c.samples);
   return (
-    <div className="bg-card rounded-xl border border-border p-4 space-y-3 hover:shadow-md transition-shadow">
+    <div className={`bg-card rounded-xl border p-4 space-y-3 hover:shadow-md transition-shadow ${c.remainingNegative ? 'border-red-300' : 'border-border'}`}>
       <div>
         <p className="font-semibold text-sm text-foreground capitalize">{c.name}</p>
         <p className="text-xs text-muted-foreground">{c.coffeeType}</p>
@@ -100,16 +104,39 @@ function SupplierCard({ c }) {
       <div className="flex items-baseline gap-2">
         <span className={`text-3xl font-bold leading-tight ${colorClass}`}>{fmt(c.remainingDisplay)}</span>
         <span className="text-sm text-muted-foreground">KG remaining</span>
+        {c.remainingNegative && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">CAPPED</span>}
       </div>
       <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${c.remaining < 0 ? 'bg-destructive' : c.remaining < 500 ? 'bg-red-500' : c.remaining < 5000 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-full transition-all ${c.remainingDisplay === 0 ? 'bg-muted-foreground/30' : c.remainingDisplay < 500 ? 'bg-red-500' : c.remainingDisplay < 5000 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }} />
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        <div className="flex justify-between"><span className="text-muted-foreground">Dispatch KG</span><span className="font-medium">{c.dispatchKg > 0 ? fmt(c.dispatchKg) : '—'}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Received KG</span><span className="font-medium">{fmt(c.received)}</span></div>
+        {c.shrinkage != null && (
+          <div className="flex justify-between col-span-2">
+            <span className="text-muted-foreground">Shrinkage KG</span>
+            <span className={`font-medium ${c.shrinkage < 0 ? 'text-red-600' : 'text-green-700'}`}>
+              {c.shrinkage < 0 ? '▲ ' : '▼ '}{fmt(Math.abs(c.shrinkage))}
+            </span>
+          </div>
+        )}
+        {c.netCoffeeKg !== c.received && (
+          <div className="flex justify-between col-span-2">
+            <span className="text-muted-foreground">Net Coffee KG</span>
+            <span className="font-medium text-foreground">{fmt(c.netCoffeeKg)}</span>
+          </div>
+        )}
         <div className="flex justify-between"><span className="text-muted-foreground">Samples KG</span><span className="font-medium text-blue-600">{fmt(c.samples)}</span></div>
-        <div className="flex justify-between"><span className="text-muted-foreground">Processing KG</span><span className="font-medium text-primary">{fmt(c.actualProc)}</span></div>
-        <div className="flex justify-between items-center"><span className="text-muted-foreground">Warehouse Waste</span><span className={`font-medium ${c.wasteNegative ? 'text-amber-600' : 'text-muted-foreground'}`}>{c.wasteNegative ? '⚠️ ' : ''}{fmt(c.waste)}</span></div>
-        <div className="flex justify-between col-span-2 border-t border-border/50 pt-1 mt-1"><span className="text-muted-foreground font-medium">Remaining KG</span><span className={`font-bold ${colorClass}`}>{fmt(c.remainingDisplay)}</span></div>
+        <div className="flex justify-between items-center">
+          <span className={`text-muted-foreground ${procExceedsReceived ? 'text-red-500 font-semibold' : ''}`}>Processing KG</span>
+          <span className={`font-medium ${procExceedsReceived ? 'text-red-600' : 'text-primary'}`}>
+            {procExceedsReceived ? '⚠️ ' : ''}{fmt(c.actualProc)}
+          </span>
+        </div>
+        <div className="flex justify-between col-span-2 border-t border-border/50 pt-1 mt-1">
+          <span className="text-muted-foreground font-medium">Remaining KG</span>
+          <span className={`font-bold ${colorClass}`}>{fmt(c.remainingDisplay)}</span>
+        </div>
       </div>
       {c.lastActivity && <p className="text-[11px] text-muted-foreground border-t border-border/40 pt-2">Last activity: {c.lastActivity}</p>}
     </div>
@@ -124,6 +151,7 @@ export default function StockReport() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState({ supplier: 'all', coffeeType: 'all', showZero: false });
 
+  const { data: purchases = [] } = useQuery({ queryKey: ['purchase-records'], queryFn: () => base44.entities.PurchaseRecord.list('-created_date', 500) });
   const { data: receipts = [], refetch: refetchReceipts } = useQuery({ queryKey: ['warehouse-receipts'], queryFn: () => base44.entities.WarehouseReceipt.list('-created_date', 500) });
   const { data: sampleLogs = [], refetch: refetchSamples } = useQuery({ queryKey: ['sample-logs'], queryFn: () => base44.entities.SampleLog.list() });
   const { data: processingLogs = [], refetch: refetchProcessing } = useQuery({ queryKey: ['processing-logs'], queryFn: () => base44.entities.ProcessingLog.list('-created_date', 500) });
@@ -157,63 +185,117 @@ export default function StockReport() {
 
   const supplierMap = useMemo(() => {
     const m = {};
-    suppliers.forEach(s => { m[s.supplier_name] = s; });
+    suppliers.forEach(s => {
+      if (s.supplier_name) {
+        m[s.supplier_name] = s;
+        m[s.supplier_name.toLowerCase().trim()] = s;
+      }
+    });
     return m;
   }, [suppliers]);
 
   // ── Per-supplier cards (Tab 2) ─────────────────────────────────────────────
   const supplierCards = useMemo(() => {
-    // Archived records must never feed into stock calculations
     const notArchived = (x) => x?.archived !== true;
-    const activeReceipts = receipts.filter(notArchived);
+
+    // Build set of active purchase IDs/codes to exclude orphaned receipts
+    const activePurchaseCodes = new Set();
+    const activePurchaseIds = new Set();
+    purchases.filter(notArchived).forEach(p => {
+      if (p.coffee_code) activePurchaseCodes.add(p.coffee_code);
+      if (p.id) activePurchaseIds.add(p.id);
+    });
+
+    // Only receipts that are not archived AND whose linked purchase is active
+    const activeReceipts = receipts.filter(r => {
+      if (r?.archived) return false;
+      // If receipt has no purchase link, include it (manual receipt)
+      if (!r.coffee_code && !r.purchase_record_id) return true;
+      // Otherwise must have an active linked purchase
+      return (r.purchase_record_id && activePurchaseIds.has(r.purchase_record_id))
+        || (r.coffee_code && activePurchaseCodes.has(r.coffee_code));
+    });
+
     const activeSampleLogs = sampleLogs.filter(notArchived);
     const activeProcessingLogs = processingLogs.filter(notArchived);
 
-    // Build lot-level received map: { supplier_name -> [{ receivedKg }] }
-    // Each receipt = one lot. We need per-lot data to correctly compute waste.
-    const lotsBySupplier = {}; // supplier_name -> [{ receivedKg }]
-    activeReceipts.forEach(r => {
-      if (!r.supplier_name) return;
-      if (!lotsBySupplier[r.supplier_name]) lotsBySupplier[r.supplier_name] = [];
-      lotsBySupplier[r.supplier_name].push({ receivedKg: r.warehouse_received_net_kg || 0 });
+    // Use canonical availability utility for consistent numbers across the whole app
+    const availMap = computeAvailabilityBySupplier({
+      receipts: activeReceipts,
+      purchases,
+      sampleLogs: activeSampleLogs,
+      processingLogs: activeProcessingLogs,
     });
 
-    // Aggregate maps
-    const samplesMap = {}, procMap = {}, lastActivityMap = {};
-    activeSampleLogs.forEach(s => { if (s.supplier_name) samplesMap[s.supplier_name] = (samplesMap[s.supplier_name] || 0) + (s.sample_kg || 0); });
-    activeProcessingLogs.forEach(p => { if (p.supplier_name) { const kg = p.actual_weighed_kg ?? p.kg_sent ?? 0; procMap[p.supplier_name] = (procMap[p.supplier_name] || 0) + kg; } });
-    const updateActivity = (name, dateStr) => { if (name && dateStr && (!lastActivityMap[name] || dateStr > lastActivityMap[name])) lastActivityMap[name] = dateStr; };
+    // Fix 1: Received KG = sum of warehouse_received_net_kg per supplier (deduplicated, one row per receipt)
+    // Fix 2: Dispatch KG comes ONLY from net_dispatch_weight_kg stored on the WarehouseReceipt itself
+    const grossReceivedMap = {};
+    const dispatchMap = {};
+    const seenReceiptIds = new Set();
+    activeReceipts.forEach(r => {
+      if (!r.supplier_name) return;
+      if (seenReceiptIds.has(r.id)) return; // deduplicate — count each receipt exactly once
+      seenReceiptIds.add(r.id);
+      grossReceivedMap[r.supplier_name] = (grossReceivedMap[r.supplier_name] || 0) + (r.warehouse_received_net_kg || 0);
+      // Fix 2: only add dispatch KG if it's explicitly stored on the receipt record
+      if (r.net_dispatch_weight_kg != null && r.net_dispatch_weight_kg > 0) {
+        dispatchMap[r.supplier_name] = (dispatchMap[r.supplier_name] || 0) + r.net_dispatch_weight_kg;
+      }
+    });
+
+    // Last activity
+    const lastActivityMap = {};
+    const updateActivity = (name, dateStr) => {
+      if (name && dateStr && (!lastActivityMap[name] || dateStr > lastActivityMap[name])) lastActivityMap[name] = dateStr;
+    };
     activeReceipts.forEach(r => updateActivity(r.supplier_name, r.received_date));
     activeSampleLogs.forEach(s => updateActivity(s.supplier_name, s.sample_date));
     activeProcessingLogs.forEach(p => updateActivity(p.supplier_name, p.date));
 
-    const allNames = new Set([...Object.keys(lotsBySupplier), ...Object.keys(samplesMap), ...Object.keys(procMap)]);
-    return Array.from(allNames).map(name => {
-      const lots = lotsBySupplier[name] || [];
-      const received = lots.reduce((s, l) => s + l.receivedKg, 0);
-      const samples = samplesMap[name] || 0;
-      const actualProc = procMap[name] || 0;
+    const purchaseCoffeeTypeMap = {};
+    purchases.filter(p => p.supplier_name && p.coffee_type && p.archived !== true).forEach(p => {
+      const key = p.supplier_name.toLowerCase().trim();
+      if (!purchaseCoffeeTypeMap[key]) purchaseCoffeeTypeMap[key] = p.coffee_type;
+    });
 
-      // Waste: only for lots where processing has started (actualProc > 0)
-      // We distribute processing proportionally — but since we only know total proc per supplier,
-      // waste = received - samples - proc only when proc > 0, else 0
-      const waste = actualProc > 0 ? Math.max(0, received - samples - actualProc) : 0;
-      const wasteNegative = actualProc > 0 && (received - samples - actualProc) < 0;
+    // Fix 4: Build the full supplier list from ALL active receipts, not just those in availMap
+    // availMap may miss suppliers whose receipts have no purchase link match — include them too
+    const allSupplierNames = new Set([
+      ...Object.keys(availMap),
+      ...Object.keys(grossReceivedMap),
+    ]);
 
-      // Remaining = all received minus samples minus processing (unprocessed lots still in warehouse)
-      const remaining = received - samples - actualProc;
-
+    return Array.from(allSupplierNames).map(name => {
+      const v = availMap[name] || { netCoffeeKg: grossReceivedMap[name] || 0, samplesKg: 0, processedKg: 0, availableKg: grossReceivedMap[name] || 0 };
+      const received = grossReceivedMap[name] || 0;
+      const dispatchKg = dispatchMap[name] || 0;
+      // Shrinkage: dispatch vs received — only show if dispatch was actually recorded
+      const shrinkage = dispatchKg > 0 ? received - dispatchKg : null;
+      // Fix 3: Use netCoffeeKg (already bag-tare deducted) for waste calculation
+      const waste = v.processedKg > 0 ? Math.max(0, v.netCoffeeKg - v.samplesKg - v.processedKg) : 0;
       return {
         name,
-        coffeeType: supplierMap[name]?.coffee_type || '—',
-        received, samples, actualProc,
-        waste, wasteNegative,
-        remaining,
-        remainingDisplay: Math.max(0, remaining),
+        coffeeType: (supplierMap[name] ?? supplierMap[(name || '').toLowerCase().trim()])?.coffee_type
+          || purchaseCoffeeTypeMap[(name || '').toLowerCase().trim()]
+          || '—',
+        received,                       // gross received KG (for display)
+        netCoffeeKg: v.netCoffeeKg,     // after bag tare deduction
+        dispatchKg, shrinkage,
+        samples: v.samplesKg,
+        // Fix 5: processedKg already uses actual_weighed_kg ?? kg_sent via availabilityUtils
+        actualProc: v.processedKg,
+        actualProcCapped: v.processedKg,
+        waste,
+        wasteNegative: v.processedKg > 0 && (v.netCoffeeKg - v.samplesKg - v.processedKg) < 0,
+        remaining: v.availableKg,
+        remainingDisplay: v.availableKg, // Fix 3: already bag-tare deducted via availabilityUtils
+        remainingNegative: false,
         lastActivity: lastActivityMap[name] || null,
       };
-    }).filter(c => c.received > 0).sort((a, b) => b.remaining - a.remaining);
-  }, [receipts, sampleLogs, processingLogs, supplierMap]);
+      // Fix 4: include ALL suppliers with at least one receipt (received > 0 OR in availMap)
+    }).filter(c => (grossReceivedMap[c.name] || 0) > 0 || (availMap[c.name]?.netCoffeeKg || 0) > 0)
+      .sort((a, b) => b.remaining - a.remaining);
+  }, [receipts, purchases, sampleLogs, processingLogs, supplierMap]);
 
   // ── Per-coffee-type aggregation (Tab 1) ────────────────────────────────────
   const coffeeTypeCards = useMemo(() => {
@@ -223,11 +305,10 @@ export default function StockReport() {
       if (!map[ct]) map[ct] = { coffeeType: ct, supplierCount: 0, receivedKg: 0, processedKg: 0, samplesKg: 0, remainingKg: 0, exportedKg: 0, exportBags: 0, rejectedKg: 0, rejectBags: 0, wasteKg: 0 };
       map[ct].supplierCount++;
       map[ct].receivedKg += c.received;
-      map[ct].processedKg += c.actualProc;
+      map[ct].processedKg += c.actualProcCapped; // use capped value for balance
       map[ct].samplesKg += c.samples;
-      map[ct].remainingKg += c.remaining;
+      map[ct].remainingKg += c.remainingDisplay; // already Math.max(0, ...)
     });
-    // Aggregate waste from supplier cards (already uses correct formula: only when proc > 0)
     supplierCards.forEach(c => {
       const ct = c.coffeeType;
       if (map[ct]) map[ct].wasteKg += c.waste;
@@ -247,7 +328,7 @@ export default function StockReport() {
   // ── Summary bar ────────────────────────────────────────────────────────────
   const summary = useMemo(() => ({
     totalReceived: supplierCards.reduce((s, c) => s + c.received, 0),
-    totalRemaining: supplierCards.reduce((s, c) => s + Math.max(0, c.remaining), 0),
+    totalRemaining: supplierCards.reduce((s, c) => s + c.remainingDisplay, 0),
     totalWaste: supplierCards.reduce((s, c) => s + c.waste, 0),
     coffeeTypesCount: coffeeTypeCards.length,
   }), [supplierCards, coffeeTypeCards]);
@@ -298,7 +379,7 @@ export default function StockReport() {
     }
     if (filters.supplier !== 'all') cards = cards.filter(c => c.name === filters.supplier);
     if (filters.coffeeType !== 'all') cards = cards.filter(c => c.coffeeType === filters.coffeeType);
-    if (!filters.showZero) cards = cards.filter(c => c.remaining > 0);
+    if (!filters.showZero) cards = cards.filter(c => c.remainingDisplay > 0);
     return cards;
   }, [supplierCards, search, filters]);
 
@@ -313,6 +394,18 @@ export default function StockReport() {
         <PageHeader title="Stock Report" description="Live warehouse inventory">
           <div className="flex items-center gap-3 flex-wrap">
             <FilterButton onClick={() => setFilterOpen(true)} activeCount={stockFilterActiveCount} />
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={() => {
+                const headers = ['Supplier', 'Coffee Type', 'Received KG', 'Processed KG', 'Remaining KG', 'Waste KG'];
+                const rows = supplierCards.map(c => [c.name, c.coffeeType, c.received, c.actualProc, c.remainingDisplay, c.waste]);
+                exportXLSX('Stock_Report_By_Supplier', 'Stock Report — By Supplier', headers, rows, null);
+              }}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Export Excel
+            </Button>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Auto-refresh 30s · Last: {format(lastRefresh, 'HH:mm:ss')}</span>

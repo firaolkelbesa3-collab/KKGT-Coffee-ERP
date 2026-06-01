@@ -1,6 +1,5 @@
-﻿import { supabase } from '@/api/base44Client';
+import { base44 } from '@/api/base44Client';
 import { logActivity } from '@/lib/activityLogger';
-import { base44 } from '@/api/supabaseClient';
 
 const TRACKED_FIELDS = [
   { key: 'warehouse_received_net_kg', label: 'Warehouse Received KG' },

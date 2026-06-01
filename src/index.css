@@ -86,5 +86,107 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
+    /* Mobile body copy must never fall below 16px (composed-delight Part II). */
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Respect iOS notch / home-bar so content is never clipped. */
+    padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Smooth, non-jarring focus rings — soft glow instead of hard outline. */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.35);
+    border-radius: var(--radius);
+  }
+
+  /* Honor user's reduced-motion preference — accessibility over delight. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* ── Touch targets ──────────────────────────────────────────────────────
+     Anything tappable should clear 44×44px (Apple HIG). Apply `.tap-target`
+     to icon-only buttons and compact controls on touch surfaces. */
+  .tap-target {
+    @apply inline-flex items-center justify-center;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* ── Scroll containers ── momentum scroll on iOS, no scroll-bleed. */
+  .scroll-container {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* ── Safe-area helpers for fixed bottom UI (mobile nav, sheets). */
+  .pb-safe { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+
+  /* ── Card lift on hover — GPU-composited transform only. */
+  .card-lift {
+    transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 300ms ease-out;
+    will-change: transform;
+  }
+  @media (hover: hover) {
+    .card-lift:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 32px -12px hsl(var(--foreground) / 0.18);
+    }
+  }
+
+  /* ── Press feedback — compresses on tap, feels physical. */
+  .press {
+    transition: transform 80ms ease-out;
+  }
+  .press:active { transform: scale(0.97); }
+}
+
+@layer utilities {
+  /* ── Delight keyframe utilities ──────────────────────────────────────── */
+  .animate-pop {
+    animation: kf-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .animate-fade-up {
+    animation: kf-fade-up 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted-foreground) / 0.12) 37%,
+      hsl(var(--muted)) 63%
+    );
+    background-size: 400% 100%;
+    animation: kf-shimmer 1.4s ease-in-out infinite;
+  }
+  /* Staggered list entrance — set style="animation-delay" per item. */
+  .stagger-item {
+    animation: kf-fade-up 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes kf-pop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes kf-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kf-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }

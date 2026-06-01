@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,7 @@ import { Plus, Pencil, Trash2, Recycle, User, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import NumberInput from '@/components/shared/NumberInput';
 import TablePagination from '@/components/shared/TablePagination';
-import { base44 } from '@/api/supabaseClient';
+import { useSupplierBagSummary } from '@/components/bagledger/SupplierBagSummary';
 
 export const REJECT_BAG_PRICE = 153;
 
@@ -23,7 +24,7 @@ function fmt(n, d = 0) {
 }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 
-function FormDialog({ open, onOpenChange, initialData, suppliers, onSubmit, isSubmitting }) {
+function FormDialog({ open, onOpenChange, initialData, suppliers, onSubmit, isSubmitting, agentSummary = [], supplierSummary = [] }) {
   const [mode, setMode] = useState('agent');
   const [date, setDate] = useState('');
   const [agentName, setAgentName] = useState('');
@@ -55,7 +56,24 @@ function FormDialog({ open, onOpenChange, initialData, suppliers, onSubmit, isSu
 
   const bags = parseFloat(bagsUsed) || 0;
   const amount = bags * REJECT_BAG_PRICE;
-  const canSubmit = !!date && bags > 0 && (mode === 'agent' ? !!agentName : !!supplierName);
+
+  const availableBags = useMemo(() => {
+    if (mode === 'agent' && agentName) {
+      const found = agentSummary.find(s => s.key === agentName);
+      return found ? found.netToReturn : null;
+    }
+    if (mode === 'supplier' && supplierName) {
+      const found = supplierSummary.find(s => s.key === supplierName);
+      return found ? found.netToReturn : null;
+    }
+    return null;
+  }, [mode, agentName, supplierName, agentSummary, supplierSummary]);
+
+  const prevBags = initialData ? (Number(initialData.bags_used) || 0) : 0;
+  const effectiveAvailable = availableBags !== null ? availableBags + prevBags : null;
+  const exceedsBags = effectiveAvailable !== null && bags > effectiveAvailable;
+
+  const canSubmit = !!date && bags > 0 && (mode === 'agent' ? !!agentName : !!supplierName) && !exceedsBags;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -136,6 +154,17 @@ function FormDialog({ open, onOpenChange, initialData, suppliers, onSubmit, isSu
             </div>
           </div>
 
+          {exceedsBags && effectiveAvailable !== null && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm font-medium">
+              ⊘ Cannot exceed available balance — {fmt(effectiveAvailable)} bags available for {mode === 'agent' ? agentName : supplierName}
+            </div>
+          )}
+          {effectiveAvailable !== null && !exceedsBags && bags > 0 && (
+            <div className="text-xs text-muted-foreground px-1">
+              Available: {fmt(effectiveAvailable)} bags · After this entry: {fmt(effectiveAvailable - bags)} bags
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Note</Label>
             <Textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Optional..." />
@@ -160,6 +189,7 @@ export default function RejectBagUsageSection() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const queryClient = useQueryClient();
+  const { agentSummary, supplierSummary } = useSupplierBagSummary();
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ['suppliers-for-bagledger'],
@@ -264,6 +294,8 @@ export default function RejectBagUsageSection() {
         suppliers={suppliers}
         onSubmit={data => { if (editRecord) updateMutation.mutate({ id: editRecord.id, data }); else createMutation.mutate(data); }}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
+        agentSummary={agentSummary}
+        supplierSummary={supplierSummary}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>

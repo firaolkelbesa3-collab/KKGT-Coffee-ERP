@@ -74,6 +74,7 @@ export default function FilterPanel({ open, onClose, fields = [], values = {}, o
 
               {field.type === 'date' && (
                 <DateRangePicker
+                  inline
                   from={draft[field.key]?.from || ''}
                   to={draft[field.key]?.to || ''}
                   onChange={v => set(field.key, v)}

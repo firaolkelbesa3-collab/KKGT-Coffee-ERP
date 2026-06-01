@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +19,7 @@ import { computeStockPools } from '@/lib/stockPools';
 import { notifyExportContract } from '@/lib/notificationService';
 import NumberInput from '@/components/shared/NumberInput';
 import TablePagination from '@/components/shared/TablePagination';
-import { base44 } from '@/api/supabaseClient';
+import ActiveFilters from '@/components/shared/ActiveFilters';
 
 function fmt(n, d = 2) {
   if (n == null || isNaN(n)) return '—';
@@ -321,11 +322,25 @@ function ContractDetailView({ contract, onBack, onEdit, onUpdatePayments }) {
               { label: 'Contract Date', value: contract.contract_date ? format(new Date(contract.contract_date), 'dd/MM/yyyy') : (contract.export_date ? format(new Date(contract.export_date), 'dd/MM/yyyy') : '—') },
               { label: 'Contract PI Number', value: contract.contract_pi_number || '—' },
               { label: 'Export KG', value: `${fmt(contract.export_kg, 0)} KG` },
-              { label: 'Export Sample KG', value: contract.export_sample_kg ? `${fmt(contract.export_sample_kg, 0)} KG` : '—' },
+              { label: 'Export Sample KG', value: contract.export_sample_kg != null && contract.export_sample_kg !== 0 ? `${fmt(contract.export_sample_kg, 0)} KG` : '—' },
               { label: 'Actual Shipped KG', value: contract.actual_shipped_kg ? `${fmt(contract.actual_shipped_kg, 0)} KG` : `${fmt(contract.export_kg, 0)} KG` },
-              { label: 'Pricing Method', value: contract.pricing_method === 'per_lb' ? 'Per LB (USD)' : 'Per KG (USD)' },
-              { label: 'Price', value: contract.pricing_method === 'per_lb' ? `$${fmt(contract.price_per_lb_usd, 6)}/LB` : `$${fmt(contract.price_per_kg_usd, 4)}/KG` },
-              { label: 'Total LB', value: contract.total_lb ? `${fmt(contract.total_lb, 3)} LB` : '—' },
+              { label: 'Pricing Method', value: contract.pricing_method === 'per_lb' ? 'Per LB (USD)' : contract.pricing_method === 'per_kg' ? 'Per KG (USD)' : (contract.price_per_lb_usd ? 'Per LB (USD)' : 'Per KG (USD)') },
+              { label: 'Price', value: (() => {
+                  const isLb = contract.pricing_method === 'per_lb' || (!contract.pricing_method && contract.price_per_lb_usd);
+                  if (isLb && contract.price_per_lb_usd != null) return `$${fmt(contract.price_per_lb_usd, 6)}/LB`;
+                  if (!isLb && contract.price_per_kg_usd != null) return `$${fmt(contract.price_per_kg_usd, 4)}/KG`;
+                  if (contract.price_per_lb_usd != null) return `$${fmt(contract.price_per_lb_usd, 6)}/LB`;
+                  if (contract.price_per_kg_usd != null) return `$${fmt(contract.price_per_kg_usd, 4)}/KG`;
+                  return '—';
+                })() },
+              { label: 'Total LB', value: (() => {
+                  const isPerKg = contract.pricing_method === 'per_kg' || (!contract.pricing_method && !contract.price_per_lb_usd && contract.price_per_kg_usd);
+                  if (isPerKg) return '—';
+                  if (contract.total_lb != null) return `${fmt(contract.total_lb, 3)} LB`;
+                  const exportKg = parseFloat(contract.export_kg) || 0;
+                  if (exportKg > 0) return `${fmt(exportKg * 2.2046, 3)} LB`;
+                  return '—';
+                })() },
               { label: 'Contract Rate', value: rateMissing ? '— (Rate Pending)' : `${fmt(contractRate, 4)} ETB/USD` },
               { label: 'Rate Confirmed', value: contract.rate_confirmed_date ? format(new Date(contract.rate_confirmed_date), 'dd/MM/yyyy') : '—' },
               { label: 'Payment Terms', value: paymentTermsDisplay },
@@ -578,6 +593,12 @@ export default function ExportContracts() {
             className="max-w-md h-10"
           />
         </div>
+        <ActiveFilters
+          filters={[
+            { label: 'Search', value: search || '', onRemove: () => { setSearch(''); setPage(1); } },
+          ]}
+          onClearAll={() => { setSearch(''); setPage(1); }}
+        />
 
         {/* Table */}
         <div className="hidden md:block rounded-xl border border-border bg-card overflow-hidden">

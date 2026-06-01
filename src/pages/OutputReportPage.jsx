@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,12 +18,13 @@ import { getOutputWarnings } from '@/lib/formWarnings';
 import NumberInput from '@/components/shared/NumberInput';
 import { computeStockPools } from '@/lib/stockPools';
 import TablePagination from '@/components/shared/TablePagination';
+import ExportBar from '@/components/shared/ExportBar';
+import { exportPDF, exportXLSX } from '@/lib/exportUtils';
 import ArchiveDialog from '@/components/shared/ArchiveDialog';
 import ArchivedRecordsSection from '@/components/shared/ArchivedRecordsSection';
 import { archiveRecord } from '@/lib/archiveService';
 import { logActivity, diffRecords } from '@/lib/activityLogger';
 import { notifyOutputReport } from '@/lib/notificationService';
-import { base44 } from '@/api/supabaseClient';
 
 // PAGE_SIZE replaced by dynamic pageSize state
 
@@ -72,15 +74,18 @@ function OutputFormDialog({ open, onOpenChange, initialData, suppliers, processi
     return map;
   }, [suppliers]);
 
-  // Derive unique coffee types by going ProcessingLog -> supplier_name -> Supplier.coffee_type
+  // Derive unique coffee types directly from ProcessingLog entries (read coffee_type field directly)
   const coffeeTypes = useMemo(() => {
     const types = new Set();
     processingLogs.forEach(p => {
-      const ct = supplierCoffeeTypeMap[p.supplier_name];
-      if (ct) types.add(ct);
+      if (!p.archived && p.entry_type !== 'Recleaning' && p.coffee_type) {
+        types.add(p.coffee_type);
+      }
     });
+    // Also include from supplier map as fallback for any entries missing coffee_type on the log
+    suppliers.forEach(s => { if (s.coffee_type) types.add(s.coffee_type); });
     return Array.from(types).sort();
-  }, [processingLogs, supplierCoffeeTypeMap]);
+  }, [processingLogs, suppliers]);
 
   const [form, setForm] = useState(EMPTY);
 
@@ -137,21 +142,59 @@ function OutputFormDialog({ open, onOpenChange, initialData, suppliers, processi
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   // Auto-fill total_kg_processed.
-  //   Standard → sum Standard ProcessingLog KG for date + coffee type.
+  //   Standard → sum Standard ProcessingLog KG for date range + coffee type (read directly from log, include null coffee_type).
   //   Recleaned → sum Recleaning ProcessingLog KG for date + buyer + inspection_ref.
+  const endDate = form.end_date || form.start_date;
+
+  // Build a set of supplier names whose coffee_type is explicitly "Natural Guji"
+  // so we can exclude them from null-coffee_type matches on other types.
+  const naturalGujiSuppliers = useMemo(() => {
+    const s = new Set();
+    suppliers.forEach(sup => { if (sup.coffee_type === 'Natural Guji' && sup.supplier_name) s.add(sup.supplier_name); });
+    // Also include processing log entries that explicitly have coffee_type = Natural Guji
+    processingLogs.forEach(p => { if (p.coffee_type === 'Natural Guji' && p.supplier_name) s.add(p.supplier_name); });
+    return s;
+  }, [suppliers, processingLogs]);
+
+  const matchingStandardLogs = useMemo(() => {
+    if (!form.start_date || !form.coffee_type || isRecleaned) return [];
+    return processingLogs.filter(p => {
+      if (p.archived || p.entry_type === 'Recleaning') return false;
+      if (p.date < form.start_date || p.date > endDate) return false;
+      // Exact match on coffee_type — always include
+      if (p.coffee_type === form.coffee_type) return true;
+      // Null coffee_type (legacy entries):
+      //   - Never include in Natural Guji (they belong to other types)
+      if (form.coffee_type === 'Natural Guji') return false;
+      //   - For all other types: include null entries ONLY if the supplier is NOT a Natural Guji supplier
+      if (p.coffee_type == null && !naturalGujiSuppliers.has(p.supplier_name)) return true;
+      return false;
+    });
+  }, [form.coffee_type, form.start_date, endDate, isRecleaned, processingLogs, naturalGujiSuppliers]);
+
   const autoFilledKg = useMemo(() => {
     if (!form.start_date) return null;
     if (isRecleaned) {
       if (!form.inspection_ref) return null;
       return recleaningLogs
-        .filter(p => p.date >= form.start_date && p.date <= (form.end_date || form.start_date) && p.inspection_ref === form.inspection_ref)
+        .filter(p => p.date >= form.start_date && p.date <= endDate && p.inspection_ref === form.inspection_ref)
         .reduce((sum, p) => sum + (p.actual_weighed_kg ?? p.kg_sent ?? 0), 0);
     }
     if (!form.coffee_type) return null;
-    return processingLogs
-      .filter(p => p.entry_type !== 'Recleaning' && p.date >= form.start_date && p.date <= (form.end_date || form.start_date) && supplierCoffeeTypeMap[p.supplier_name] === form.coffee_type)
-      .reduce((sum, p) => sum + (p.actual_weighed_kg ?? p.kg_sent ?? 0), 0);
-  }, [form.coffee_type, form.start_date, form.end_date, form.inspection_ref, isRecleaned, processingLogs, recleaningLogs, supplierCoffeeTypeMap]);
+    return matchingStandardLogs.reduce((sum, p) => sum + (p.actual_weighed_kg ?? p.kg_sent ?? 0), 0);
+  }, [form.coffee_type, form.start_date, endDate, form.inspection_ref, isRecleaned, matchingStandardLogs, recleaningLogs]);
+
+  // Per-date breakdown for the Standard auto-fill
+  const autoFillBreakdown = useMemo(() => {
+    if (isRecleaned || !form.start_date || !form.coffee_type || matchingStandardLogs.length === 0) return [];
+    const byDate = {};
+    matchingStandardLogs.forEach(p => {
+      if (!byDate[p.date]) byDate[p.date] = { kg: 0, count: 0 };
+      byDate[p.date].kg += (p.actual_weighed_kg ?? p.kg_sent ?? 0);
+      byDate[p.date].count += 1;
+    });
+    return Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b));
+  }, [isRecleaned, form.start_date, form.coffee_type, matchingStandardLogs]);
 
   useEffect(() => {
     if (autoFilledKg !== null) set('total_kg_processed', String(autoFilledKg));
@@ -181,6 +224,10 @@ function OutputFormDialog({ open, onOpenChange, initialData, suppliers, processi
     : null;
   const balanceError = totalKg > 0 && Math.abs(exportKg + rejectKg + wasteKg - totalKg) > 0.01
     ? 'Export KG + Reject KG + Waste KG must equal Total KG Processed'
+    : null;
+
+  const wasteError = wasteKg < -0.01
+    ? `Export + Reject KG exceeds total processed KG by ${Math.abs(Math.round(wasteKg)).toLocaleString()} KG — reduce bag count`
     : null;
 
   const formWarnings = useMemo(() => getOutputWarnings(form), [form]);
@@ -311,6 +358,21 @@ function OutputFormDialog({ open, onOpenChange, initialData, suppliers, processi
             {form.coffee_type && form.start_date && autoFilledKg === 0 && (
               <p className="text-xs text-destructive italic">No processing found for this date range and coffee type.</p>
             )}
+            {!isRecleaned && autoFillBreakdown.length > 0 && (
+              <div className="rounded-md border border-border bg-muted/30 p-2.5 text-xs space-y-1">
+                <p className="font-semibold text-muted-foreground">Auto-filled from {matchingStandardLogs.length} processing {matchingStandardLogs.length === 1 ? 'entry' : 'entries'}:</p>
+                {autoFillBreakdown.map(([date, { kg, count }]) => (
+                  <div key={date} className="flex justify-between text-muted-foreground">
+                    <span>{(() => { try { return new Date(date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return date; } })()}:</span>
+                    <span className="font-medium text-foreground">{kg.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} KG <span className="text-muted-foreground font-normal">({count} {count === 1 ? 'entry' : 'entries'})</span></span>
+                  </div>
+                ))}
+                <div className="flex justify-between border-t border-border pt-1 font-semibold text-foreground">
+                  <span>Total:</span>
+                  <span>{(autoFilledKg ?? 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} KG</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {isRecleaned && (
@@ -380,12 +442,17 @@ function OutputFormDialog({ open, onOpenChange, initialData, suppliers, processi
             <Label className="text-xs font-medium">Remark</Label>
             <Textarea value={form.remark} onChange={e => set('remark', e.target.value)} rows={2} placeholder="Optional..." />
           </div>
+          {wasteError && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm font-medium">
+              <span>⊘</span> {wasteError}
+            </div>
+          )}
           {formWarnings.length > 0 && <InlineWarningList warnings={formWarnings} />}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !form.start_date || !form.end_date || (!isRecleaned && !form.coffee_type) || (isRecleaned && (!form.buyer_name || !form.inspection_ref)) || !!pool1Error || !!balanceError}
+              disabled={isSubmitting || !form.start_date || !form.end_date || (!isRecleaned && !form.coffee_type) || (isRecleaned && (!form.buyer_name || !form.inspection_ref)) || !!pool1Error || !!balanceError || !!wasteError}
             >
               {isSubmitting ? 'Saving...' : initialData ? 'Update' : 'Save'}
             </Button>
@@ -411,7 +478,7 @@ export default function OutputReportPage() {
 
   useEffect(() => {
     if (dialogOpen) {
-      queryClient.invalidateQueries({ queryKey: ['processing-logs'] });
+      queryClient.refetchQueries({ queryKey: ['processing-logs'] });
     }
   }, [dialogOpen]);
 
@@ -425,7 +492,7 @@ export default function OutputReportPage() {
   });
   const { data: processingLogs = [] } = useQuery({
     queryKey: ['processing-logs'],
-    queryFn: () => base44.entities.ProcessingLog.list('-created_date', 500),
+    queryFn: () => base44.entities.ProcessingLog.list('-date', 2000),
     staleTime: 0,
     refetchOnMount: true,
   });
@@ -557,6 +624,26 @@ export default function OutputReportPage() {
             <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => { setFilterFrom(''); setFilterTo(''); setPage(1); }}>Clear dates</Button>
           )}
         </div>
+        <ExportBar
+          onPDF={() => {
+            const exportHeaders = ['#', 'Period', 'Type', 'Supplier / Buyer', 'Coffee Type', 'Total KG', 'Export Bags', 'Export KG', 'Reject Bags', 'Reject KG', 'Waste KG', 'Waste %'];
+            const exportRows = filtered.map((r, i) => {
+              const { start, end } = getRecordDates(r);
+              return [i+1, formatDateRange(start, end), r.entry_type || 'Standard', r.supplier_name || r.buyer_name || '—', r.coffee_type || '—', r.total_kg_processed != null ? r.total_kg_processed : '—', r.export_bags ?? '—', r.export_kg != null ? r.export_kg : '—', r.reject_bags ?? '—', r.reject_kg != null ? r.reject_kg : '—', r.waste_kg != null ? r.waste_kg : '—', r.waste_pct != null ? `${Number(r.waste_pct).toFixed(1)}%` : '—'];
+            });
+            const totals = ['', 'TOTAL', '', '', '', filtered.reduce((s, r) => s + (r.total_kg_processed || 0), 0).toFixed(2), filtered.reduce((s, r) => s + (r.export_bags || 0), 0), filtered.reduce((s, r) => s + (r.export_kg || 0), 0).toFixed(2), filtered.reduce((s, r) => s + (r.reject_bags || 0), 0), filtered.reduce((s, r) => s + (r.reject_kg || 0), 0).toFixed(2), filtered.reduce((s, r) => s + (r.waste_kg || 0), 0).toFixed(2), ''];
+            exportPDF('Output Report', exportHeaders, exportRows, totals);
+          }}
+          onXLSX={() => {
+            const exportHeaders = ['#', 'Period', 'Type', 'Supplier / Buyer', 'Coffee Type', 'Total KG', 'Export Bags', 'Export KG', 'Reject Bags', 'Reject KG', 'Waste KG', 'Waste %'];
+            const exportRows = filtered.map((r, i) => {
+              const { start, end } = getRecordDates(r);
+              return [i+1, formatDateRange(start, end), r.entry_type || 'Standard', r.supplier_name || r.buyer_name || '—', r.coffee_type || '—', r.total_kg_processed ?? 0, r.export_bags ?? 0, r.export_kg ?? 0, r.reject_bags ?? 0, r.reject_kg ?? 0, r.waste_kg ?? 0, r.waste_pct != null ? `${Number(r.waste_pct).toFixed(1)}%` : '—'];
+            });
+            const totals = ['', 'TOTAL', '', '', '', filtered.reduce((s, r) => s + (r.total_kg_processed || 0), 0), filtered.reduce((s, r) => s + (r.export_bags || 0), 0), filtered.reduce((s, r) => s + (r.export_kg || 0), 0), filtered.reduce((s, r) => s + (r.reject_bags || 0), 0), filtered.reduce((s, r) => s + (r.reject_kg || 0), 0), filtered.reduce((s, r) => s + (r.waste_kg || 0), 0), ''];
+            exportXLSX('Output_Report', 'Output Report', exportHeaders, exportRows, totals);
+          }}
+        />
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <Table>

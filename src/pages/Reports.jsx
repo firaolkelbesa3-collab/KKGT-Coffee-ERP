@@ -1,5 +1,6 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import RoleGuard from '@/components/RoleGuard';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import PurchaseDetailPanel from '@/components/reports/PurchaseDetailPanel';
 import DateRangePicker from '@/components/shared/DateRangePicker';
 import FilterPanel, { FilterButton } from '@/components/shared/FilterPanel';
 import TablePagination from '@/components/shared/TablePagination';
-import { base44 } from '@/api/supabaseClient';
+import ExportContractsReportTable from '@/components/exports/ExportContractsReportTable';
 
 function fmt(n, d = 2) {
   if (n == null || isNaN(n)) return '—';
@@ -401,7 +402,7 @@ function PurchaseSummaryReport({ purchases, suppliers, receipts }) {
   const exportRows = rowData.map((p, i) => [
     i+1, p.coffee_code||'—', fmtDate(p.purchase_date), p.supplier_name, p.region||'—',
     fmt(p.net_dispatch_weight_kg), fmt(p.unit_price_etb_per_feresula),
-    p.commission_percent!=null?`${p.commission_percent}%`:'—',
+    (p.commission_percent != null && p.commission_percent !== '') ? `${p.commission_percent}%` : '0%',
     p.grand_total_etb!=null ? fmt(p.grand_total_etb) : 'Pending',
     fmt(p.totalPaid),
     p.balance!=null ? fmt(p.balance) : 'Pending',
@@ -495,15 +496,15 @@ function PurchaseSummaryReport({ purchases, suppliers, receipts }) {
                       <td className="px-2 py-[6px]" style={{ textAlign: 'left' }}>{p.region || <span className="text-amber-600 font-semibold">—</span>}</td>
                       <td className="px-2 py-[6px]" style={{ textAlign: 'right' }}>{fmt(p.net_dispatch_weight_kg)}</td>
                       <td className="px-2 py-[6px]" style={{ textAlign: 'right' }}>{fmt(p.unit_price_etb_per_feresula)}</td>
-                      <td className="px-2 py-[6px]" style={{ textAlign: 'right' }}>{p.commission_percent!=null?`${p.commission_percent}%`:'—'}</td>
+                      <td className="px-2 py-[6px]" style={{ textAlign: 'right' }}>{(p.commission_percent != null && p.commission_percent !== '') ? `${p.commission_percent}%` : '0%'}</td>
                       <td className="px-2 py-[6px] font-medium" style={{ textAlign: 'right' }}>
                         {isPendingGT ? <span className="text-muted-foreground italic text-[9px]">Pending</span> : fmt(p.grand_total_etb)}
                       </td>
                       <td className="px-2 py-[6px] font-medium text-primary" style={{ textAlign: 'right' }}>
                         {fmt(p.totalPaid)}
                       </td>
-                      <td className={`px-2 py-[6px] font-bold ${isPendingGT ? 'text-muted-foreground' : (p.balance ?? 0) > 0 ? 'text-destructive' : 'text-green-700'}`} style={{ textAlign: 'right' }}>
-                        {isPendingGT ? <span className="italic text-[9px] font-normal">Pending</span> : p.balance === 0 ? '—' : fmt(p.balance)}
+                      <td className={`px-2 py-[6px] font-bold ${isPendingGT ? 'text-muted-foreground' : (p.balance ?? 0) > 1 ? 'text-destructive' : 'text-green-700'}`} style={{ textAlign: 'right' }}>
+                        {isPendingGT ? <span className="italic text-[9px] font-normal">Pending</span> : (Math.abs(p.balance ?? 0) <= 1 ? '0.00' : fmt(p.balance, 2))}
                       </td>
                       <td className={`px-2 py-[6px] whitespace-nowrap ${statusStyle(p.status)}`} style={{ textAlign: 'left' }}>
                         {p.status}
@@ -557,40 +558,70 @@ function WarehouseStockReport({ receipts, sampleLogs, processingLogs, purchases,
   const [supplier, setSupplier] = useState('all');
 
   const rows = useMemo(() => {
-    // Build dispatch KG map: sum net_dispatch_weight_kg from purchases per supplier
-    const dispatchBySupplier = {};
-    purchases.forEach(p => {
-      const name = p.supplier_name;
-      if (!dispatchBySupplier[name]) dispatchBySupplier[name] = 0;
-      dispatchBySupplier[name] += (p.net_dispatch_weight_kg || 0);
+    const notArchived = (x) => x?.archived !== true;
+
+    // Active non-archived receipts within date range
+    const activeReceipts = receipts.filter(r => {
+      if (r?.archived) return false;
+      if (!inRange(r.received_date, fromDate, toDate)) return false;
+      return true;
     });
 
-    // Deduplicate supplier names
-    const uniqueNames = [...new Set(suppliers.map(s => s.supplier_name))];
-    const list = uniqueNames.filter(name => supplier === 'all' || name === supplier);
-    return list.map(name => {
-      const received = receipts.filter(r => r.supplier_name === name && inRange(r.received_date, fromDate, toDate)).reduce((sum, r) => sum + (r.warehouse_received_net_kg || 0), 0);
-      const dispatched = dispatchBySupplier[name] || 0;
-      const samples = sampleLogs.filter(l => l.supplier_name === name && inRange(l.sample_date, fromDate, toDate)).reduce((sum, l) => sum + (l.sample_kg || 0), 0);
-      const processing = processingLogs.filter(p => p.supplier_name === name && inRange(p.date, fromDate, toDate)).reduce((sum, p) => sum + (p.kg_sent || 0), 0);
-      const remaining = received - samples - processing;
-      const shrinkage = received - dispatched;
-      return { name, received, dispatched, shrinkage, samples, processing, remaining };
-    }).filter(r => r.received > 0);
-  }, [suppliers, receipts, sampleLogs, processingLogs, purchases, fromDate, toDate, supplier]);
+    // Per-supplier aggregation directly from WarehouseReceipt fields only
+    const bySupplier = {};
+    activeReceipts.forEach(r => {
+      if (!r.supplier_name) return;
+      const name = r.supplier_name;
+      if (!bySupplier[name]) bySupplier[name] = { received: 0, dispatchSum: 0, hasAnyDispatch: false };
+      bySupplier[name].received += (r.warehouse_received_net_kg || 0);
+      // Only count dispatch from this receipt if the field is explicitly set (not null/undefined)
+      if (r.net_dispatch_weight_kg != null && r.net_dispatch_weight_kg !== '') {
+        bySupplier[name].dispatchSum += Number(r.net_dispatch_weight_kg);
+        bySupplier[name].hasAnyDispatch = true;
+      }
+    });
+
+    // Samples: Warehouse-type only, non-archived, in date range
+    const samplesBySupplier = {};
+    sampleLogs.filter(s => notArchived(s) && s.sample_type === 'Warehouse' && inRange(s.sample_date, fromDate, toDate)).forEach(s => {
+      if (s.supplier_name) samplesBySupplier[s.supplier_name] = (samplesBySupplier[s.supplier_name] || 0) + (s.sample_kg || 0);
+    });
+
+    // Processing: Standard type only, non-archived, in date range — use actual_weighed_kg ?? kg_sent
+    const processingBySupplier = {};
+    processingLogs.filter(p => notArchived(p) && p.entry_type !== 'Recleaning' && inRange(p.date, fromDate, toDate)).forEach(p => {
+      if (p.supplier_name) processingBySupplier[p.supplier_name] = (processingBySupplier[p.supplier_name] || 0) + (p.actual_weighed_kg ?? p.kg_sent ?? 0);
+    });
+
+    return Object.entries(bySupplier)
+      .filter(([, v]) => v.received > 0)
+      .filter(([name]) => supplier === 'all' || name === supplier)
+      .map(([name, v]) => {
+        const received = v.received;
+        const dispatched = v.hasAnyDispatch ? v.dispatchSum : null;
+        // Shrinkage = Received − Dispatch (positive = received more than dispatched = warehouse gain)
+        const shrinkage = dispatched != null ? received - dispatched : null;
+        const samples = samplesBySupplier[name] || 0;
+        const processing = processingBySupplier[name] || 0;
+        const remaining = received - samples - processing;
+        return { name, received, dispatched, shrinkage, samples, processing, remaining };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [receipts, sampleLogs, processingLogs, purchases, fromDate, toDate, supplier]);
 
   const totals = useMemo(() => ({
     received: rows.reduce((s, r) => s + r.received, 0),
-    dispatched: rows.reduce((s, r) => s + r.dispatched, 0),
-    shrinkage: rows.reduce((s, r) => s + r.shrinkage, 0),
+    dispatched: rows.filter(r => r.dispatched != null).reduce((s, r) => s + r.dispatched, 0),
     samples: rows.reduce((s, r) => s + r.samples, 0),
     processing: rows.reduce((s, r) => s + r.processing, 0),
     remaining: rows.reduce((s, r) => s + r.remaining, 0),
   }), [rows]);
 
   const headers = ['#', 'Supplier', 'Received KG', 'Dispatch KG', 'Shrinkage KG', 'Samples KG', 'Processing KG', 'Remaining KG'];
-  const csvRows = rows.map((r, i) => [i+1, r.name, fmt(r.received), fmt(r.dispatched), fmt(r.shrinkage), fmt(r.samples), fmt(r.processing), fmt(r.remaining)]);
-  const totalsRow = ['', 'TOTAL', fmt(totals.received), fmt(totals.dispatched), fmt(totals.shrinkage), fmt(totals.samples), fmt(totals.processing), fmt(totals.remaining)];
+  const csvRows = rows.map((r, i) => [i+1, r.name, fmt(r.received), r.dispatched != null ? fmt(r.dispatched) : '—', r.shrinkage != null ? fmt(r.shrinkage) : '—', fmt(r.samples), fmt(r.processing), fmt(r.remaining)]);
+  const totalsRow = ['', 'TOTAL', fmt(totals.received), fmt(totals.dispatched), '—', fmt(totals.samples), fmt(totals.processing), fmt(totals.remaining)];
+
+  const supplierOpts = useMemo(() => [...new Set(suppliers.map(s => s.supplier_name))].map(n => ({ value: n, label: n })), [suppliers]);
 
   return (
     <div>
@@ -598,32 +629,50 @@ function WarehouseStockReport({ receipts, sampleLogs, processingLogs, purchases,
       <ExportBar onPDF={() => exportPDF('Warehouse Stock Report', headers, csvRows, totalsRow)} onXLSX={() => exportXLSX('Warehouse_Stock_Report', 'Warehouse Stock Report', headers, csvRows, totalsRow)} />
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                {headers.map(h => <TableHead key={h} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">{h}</TableHead>)}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-muted/50 border-b border-border">
+                <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-8">#</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Supplier</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Received KG</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Dispatch KG</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Shrinkage KG</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Samples KG</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Processing KG</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Remaining KG</th>
+              </tr>
+            </thead>
+            <tbody>
               {rows.length === 0 ? (
-                <TableRow><TableCell colSpan={headers.length} className="text-center py-10 text-muted-foreground">No data for selected filters.</TableCell></TableRow>
+                <tr><td colSpan={8} className="text-center py-10 text-muted-foreground text-sm">No data for selected filters.</td></tr>
               ) : <>
                 {rows.map((r, i) => (
-                  <TableRow key={r.name} className="hover:bg-muted/20">
-                    <TableCell className="text-muted-foreground text-xs">{i+1}</TableCell>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell className="text-right">{fmt(r.received)}</TableCell>
-                    <TableCell className="text-right">{fmt(r.dispatched)}</TableCell>
-                    <TableCell className={`text-right ${r.shrinkage < 0 ? 'text-destructive' : 'text-accent'}`}>{fmt(r.shrinkage)}</TableCell>
-                    <TableCell className="text-right">{fmt(r.samples)}</TableCell>
-                    <TableCell className="text-right">{fmt(r.processing)}</TableCell>
-                    <TableCell className={`text-right font-bold ${r.remaining < 0 ? 'text-destructive' : 'text-accent'}`}>{fmt(r.remaining)}</TableCell>
-                  </TableRow>
+                  <tr key={r.name} className={`border-b border-border/40 hover:bg-muted/20 ${i % 2 === 1 ? 'bg-muted/10' : ''}`}>
+                    <td className="px-3 py-2 text-muted-foreground text-xs">{i+1}</td>
+                    <td className="px-3 py-2 font-medium">{r.name}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmt(r.received)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{r.dispatched != null ? fmt(r.dispatched) : '—'}</td>
+                    <td className={`px-3 py-2 text-right tabular-nums font-medium ${r.shrinkage == null ? 'text-muted-foreground' : r.shrinkage < 0 ? 'text-destructive' : 'text-green-700'}`}>
+                      {r.shrinkage != null ? (r.shrinkage >= 0 ? '+' : '') + fmt(r.shrinkage) : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmt(r.samples)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmt(r.processing)}</td>
+                    <td className={`px-3 py-2 text-right tabular-nums font-bold ${r.remaining < 0 ? 'text-destructive' : 'text-green-700'}`}>{fmt(r.remaining)}</td>
+                  </tr>
                 ))}
-                <TotalsRow cols={[null, 'TOTAL', totals.received, totals.dispatched, totals.shrinkage, totals.samples, totals.processing, totals.remaining]} />
+                <tr className="border-t-2 border-primary/30 bg-primary/5 font-bold">
+                  <td className="px-3 py-2.5"></td>
+                  <td className="px-3 py-2.5 text-sm font-bold">TOTAL</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-primary">{fmt(totals.received)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmt(totals.dispatched)}</td>
+                  <td className="px-3 py-2.5 text-right text-muted-foreground">—</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">{fmt(totals.samples)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">{fmt(totals.processing)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-green-700">{fmt(totals.remaining)}</td>
+                </tr>
               </>}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1092,48 +1141,33 @@ function ReportTable({ headers, rows, totalsRow }) {
 function ExportContractsReport({ contracts }) {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-
-  const STATUS_COLOR = {
-    'Pending': 'text-gray-600',
-    'In Progress': 'text-orange-600',
-    'Shipped': 'text-blue-600',
-    'Completed': 'text-green-700',
-  };
-
   const [contractSearch, setContractSearch] = useState('');
+
+  function getBank(contract) {
+    try {
+      const payments = JSON.parse(contract.payment_history || '[]');
+      const bank = payments.find(p => p.bank_name)?.bank_name;
+      return bank || '';
+    } catch { return ''; }
+  }
 
   const filtered = useMemo(() => {
     const q = contractSearch.toLowerCase();
     return contracts
-      .filter(c => inRange(c.export_date, fromDate, toDate) &&
-        (!contractSearch || c.contract_no?.toLowerCase().includes(q) || c.destination_country?.toLowerCase().includes(q) || c.commodity?.toLowerCase().includes(q)))
-      .sort((a, b) => (a.export_date || '') > (b.export_date || '') ? 1 : -1);
+      .filter(c => {
+        if (!inRange(c.contract_date || c.export_date, fromDate, toDate)) return false;
+        if (!contractSearch) return true;
+        return (
+          c.contract_no?.toLowerCase().includes(q) ||
+          c.contract_pi_number?.toLowerCase().includes(q) ||
+          c.destination_country?.toLowerCase().includes(q) ||
+          (c.coffee_type || c.commodity || '').toLowerCase().includes(q) ||
+          c.buyer_name?.toLowerCase().includes(q) ||
+          getBank(c).toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => (a.contract_no || '') < (b.contract_no || '') ? -1 : 1);
   }, [contracts, fromDate, toDate, contractSearch]);
-
-  const totals = useMemo(() => ({
-    total_export_value_usd: filtered.reduce((s, c) => s + (c.total_export_value_usd || 0), 0),
-    total_expenses_etb: filtered.reduce((s, c) => s + (c.total_expenses_etb || 0), 0),
-    export_total_sales_price_etb: filtered.reduce((s, c) => s + (c.export_total_sales_price_etb || 0), 0),
-    total_reject_sales_etb: filtered.reduce((s, c) => s + (c.total_reject_sales_etb || 0), 0),
-    grand_total_sales_etb: filtered.reduce((s, c) => s + (c.grand_total_sales_etb || 0), 0),
-    total_profit_etb: filtered.reduce((s, c) => s + (c.total_profit_etb || 0), 0),
-    profit_usd: filtered.reduce((s, c) => s + (c.profit_usd || 0), 0),
-  }), [filtered]);
-
-  const headers = ['#', 'Contract No', 'Destination', 'Commodity', 'Export Date', 'Total USD', 'USD Rate', 'Total Expenses ETB', 'Export Sales ETB', 'Reject Sales ETB', 'Grand Total Sales ETB', 'Total Profit ETB', 'Profit USD', 'Status'];
-  const csvRows = filtered.map((c, i) => [
-    i + 1, c.contract_no, c.destination_country, c.commodity, fmtDate(c.export_date),
-    fmt(c.total_export_value_usd), fmt(c.usd_rate_etb, 4),
-    fmt(c.total_expenses_etb), fmt(c.export_total_sales_price_etb),
-    fmt(c.total_reject_sales_etb), fmt(c.grand_total_sales_etb),
-    fmt(c.total_profit_etb), fmt(c.profit_usd), c.status || '—'
-  ]);
-  const totalsRow = ['', '', '', '', 'TOTAL',
-    fmt(totals.total_export_value_usd), '',
-    fmt(totals.total_expenses_etb), fmt(totals.export_total_sales_price_etb),
-    fmt(totals.total_reject_sales_etb), fmt(totals.grand_total_sales_etb),
-    fmt(totals.total_profit_etb), fmt(totals.profit_usd), ''
-  ];
 
   return (
     <div>
@@ -1148,52 +1182,16 @@ function ExportContractsReport({ contracts }) {
         </div>
         <Button variant="outline" size="sm" onClick={() => { setFromDate(''); setToDate(''); setContractSearch(''); }}>Clear</Button>
         <div className="space-y-1">
-          <Label className="text-xs font-medium">Search Contract</Label>
-          <Input placeholder="Contract No, destination..." value={contractSearch} onChange={e => setContractSearch(e.target.value)} className="h-8 w-48" />
+          <Label className="text-xs font-medium">Search</Label>
+          <Input
+            placeholder="Contract No, PI number, destination, bank..."
+            value={contractSearch}
+            onChange={e => setContractSearch(e.target.value)}
+            className="h-8 w-64"
+          />
         </div>
       </div>
-      <ExportBar onPDF={() => exportPDF('Export Contracts Report', headers, csvRows, totalsRow)} onXLSX={() => exportXLSX('Export_Contracts_Report', 'Export Contracts Report', headers, csvRows, totalsRow)} />
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                {headers.map(h => <TableHead key={h} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">{h}</TableHead>)}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={headers.length} className="text-center py-10 text-muted-foreground">No export contracts for selected filters.</TableCell></TableRow>
-              ) : <>
-                {filtered.map((c, i) => (
-                  <TableRow key={c.id} className="hover:bg-muted/20">
-                    <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
-                    <TableCell className="font-mono text-xs font-semibold text-primary whitespace-nowrap">{c.contract_no}</TableCell>
-                    <TableCell className="whitespace-nowrap">{c.destination_country}</TableCell>
-                    <TableCell className="whitespace-nowrap">{c.commodity}</TableCell>
-                    <TableCell className="whitespace-nowrap">{fmtDate(c.export_date)}</TableCell>
-                    <TableCell className="text-right">{fmt(c.total_export_value_usd)}</TableCell>
-                    <TableCell className="text-right">{fmt(c.usd_rate_etb, 4)}</TableCell>
-                    <TableCell className="text-right">{fmt(c.total_expenses_etb)}</TableCell>
-                    <TableCell className="text-right">{fmt(c.export_total_sales_price_etb)}</TableCell>
-                    <TableCell className="text-right">{fmt(c.total_reject_sales_etb)}</TableCell>
-                    <TableCell className="text-right font-medium">{fmt(c.grand_total_sales_etb)}</TableCell>
-                    <TableCell className={`text-right font-bold ${(c.total_profit_etb || 0) >= 0 ? 'text-green-700' : 'text-destructive'}`}>{fmt(c.total_profit_etb)}</TableCell>
-                    <TableCell className={`text-right font-semibold ${(c.profit_usd || 0) >= 0 ? 'text-green-700' : 'text-destructive'}`}>{fmt(c.profit_usd)}</TableCell>
-                    <TableCell className={`whitespace-nowrap text-xs font-semibold ${STATUS_COLOR[c.status] || ''}`}>{c.status || '—'}</TableCell>
-                  </TableRow>
-                ))}
-                <TotalsRow cols={[null, '', '', '', 'TOTAL',
-                  totals.total_export_value_usd, null,
-                  totals.total_expenses_etb, totals.export_total_sales_price_etb,
-                  totals.total_reject_sales_etb, totals.grand_total_sales_etb,
-                  totals.total_profit_etb, totals.profit_usd, null
-                ]} />
-              </>}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <ExportContractsReportTable contracts={filtered} />
     </div>
   );
 }

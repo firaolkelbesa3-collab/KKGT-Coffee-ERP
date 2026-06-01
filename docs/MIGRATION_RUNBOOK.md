@@ -7,6 +7,13 @@ migration and you should never see those bugs again.
 **Time estimate for a similar-sized app (25 entities, ~30 pages, ~200 components):**
 ~6-10 hours if everything goes smoothly. Plan for 2-3 days with debugging.
 
+**What's in here:**
+- **Phases 0–11** — the core migration (diagnosis → schema → RLS → auth → client → Edge Functions → deploy → testing → ops).
+- **Phases 12–17** — features added after v1 and their landmines: branded **reports** (exceljs/jsPDF), **Document Vault** (Supabase Storage), **mobile-friendly** rules, **charts** (recharts), **Data Audit / Excel reconciliation**, and **demo mode**.
+- **Bug index** — every error we hit with its one-line fix.
+- **Offline support** — PWA + sync-queue design and its landmines.
+- **Tech-stack cheat sheet** + dead-deps-to-delete list.
+
 ---
 
 ## Phase 0 — Pre-flight diagnosis (30 min)
@@ -848,6 +855,16 @@ git push
 | Telegram message never arrives | Bot is in group but not as admin, OR chat ID missing the minus sign | Promote bot to admin; check chat ID is negative for groups |
 | "App not verified" warning blocks login | Google OAuth client in Testing mode | Click Advanced → Continue. Don't try to publish — needs verification (weeks of paperwork) |
 | `npx playwright test` says "No tests found" | Installed `playwright` instead of `@playwright/test` | `npm install --save-dev @playwright/test` then `npm run test:e2e` |
+| Excel export shows codes like `B-023` as `-23.00` | SheetJS/auto-number coerced a text code to a number | Numeric-column detection must **reject any value containing a letter**; keep those columns as text |
+| Report totals only summed one column | Hard-coded a single total column | `computeAutoTotals` sums **all** numeric, non-index, non-rate/price/% columns; write real `SUM()` formulas in Excel |
+| Exported PDF still green/orange after rebrand | A page had its **own** local `exportPDF`/`exportXLSX` shadowing the shared engine | Delete page-local exporters; import the one shared engine everywhere |
+| Excel file opens but has no colors/fills | Community **SheetJS ignores cell styles** | Use **exceljs** for styled output (real fills, fonts, formulas); SheetJS only for parsing imports |
+| `<SelectItem value="">` crash (Radix) | Passed an empty-string value to a Select item | Filter out blank/empty options before mapping to `<SelectItem>` |
+| Auto-mapper picked `#` or `COFFEE ERP` as a column header | Header-row guess hit a title/banner row; `"".includes("")` matches everything | Detect the **densest** row as the header; reject candidate headers shorter than 3 chars |
+| Storage upload fails: `Bucket not found` | The storage bucket SQL was never run on that project | Run the `storage_vault` migration (creates the bucket + policies) on **every** environment |
+| Storage upload fails: `new row violates row-level security policy` | `storage.objects` has RLS on by default but no policy for your bucket | Add `for insert/select/update` policies scoped to `bucket_id = '<bucket>'` |
+| Private file link returns 400/expired | Used `getPublicUrl` on a **private** bucket, or the signed URL expired | Use `createSignedUrl(path, ttl)`; regenerate on each view |
+| Demo mode: auth-redirect test fails | `VITE_DEMO_MODE=true` auto-logs in, so there's no redirect to `/login` | Expected — skip/guard that test when demo mode is on |
 
 ---
 
@@ -875,6 +892,146 @@ The app is a PWA with three offline layers:
 - True multi-device conflict resolution (consider PowerSync rather than hand-rolling)
 - Offline writes for every entity's list optimistic-injection (only the entities in `LIST_QUERY_KEY` get optimistic rows; others still queue + sync but won't show until refetch)
 
+## Phase 12 — Branded report engine (PDF + Excel) — what actually works
+
+The single biggest reporting lesson: **use the right library for each side, and route every export through ONE engine.**
+
+### Library choices (decided after pain)
+
+| Need | Use | Do NOT use |
+|---|---|---|
+| Styled Excel (fills, fonts, **real `SUM()` formulas**) | **`exceljs`** | community `xlsx`/SheetJS — *silently ignores all cell styles* |
+| Parsing an uploaded Excel/CSV (import side) | `xlsx` (SheetJS) is fine here | exceljs (heavier than needed for reads) |
+| PDF tables | **`jspdf` + `jspdf-autotable`** | hand-drawing rects with raw jsPDF |
+
+### The "one engine" rule
+Create **`src/lib/reportEngine.js`** exporting `exportReportPDF(...)`, `exportReportXLSX(...)`, and any specialized builders (e.g. `exportStatementPDF`). Every page imports these. **Never** let a page define its own `exportPDF`/`exportXLSX` — a local copy will shadow the shared one and your rebrand/fixes won't apply there (this is exactly why one report stayed green after the rebrand).
+
+Keep thin wrappers (`exportUtils.js`) with the legacy signatures so old call sites don't all need rewriting:
+```js
+export const exportXLSX = (filename, title, headers, rows, totalsRow, dateRange) =>
+  exportReportXLSX({ filename, title, subtitle: dateRange, headers, rows, totals: totalsRow, autoTotals: !!totalsRow });
+```
+
+### Number handling (the subtle bugs)
+- **Detect numeric columns by content, and reject any value containing a letter.** Otherwise codes like `B-023`, `KKGT/24/001`, `GRN-12` get coerced to numbers (`-23.00`). One letter ⇒ treat the whole column as text.
+- **Total every numeric column**, not just one — but **skip** index/`#`, and rate/price/percent/unit columns (summing a unit price is meaningless). Keep an `isNonSummableHeader()` allow-list.
+- In Excel write **real formulas**, not pre-computed strings: `cell.value = { formula: 'SUM(F5:F29)', result: 1234 }`. The result is a fallback for viewers that don't recalc.
+- Use `tabular-nums` and right-align numeric columns on screen *and* in the PDF.
+
+### Branding band (logo + colored header)
+- Rasterize your SVG logo to a small PNG (use `sharp`), base64-embed it in `src/lib/brandLogo.js` as `LOGO_PNG_DATAURL`. Embedding avoids a network fetch at export time and works offline.
+- Put a colored header band (brand RGB) + logo + title + subtitle (date range / totals summary) at the top of every PDF and as a merged, filled header row in Excel. Alternating row fills (`ROW_ALT_RGB`) make long tables readable.
+- **Sweep old brand names.** After a rebrand, grep the whole `src/` for the old company name — reports are the #1 place stale names hide (`grep -rin "KKGT\|oldname" src/`).
+
+---
+
+## Phase 13 — Document Vault (Supabase Storage) — the parts that bite
+
+### Bucket + policies are SQL, and must run on every environment
+Storage isn't created by your table migration. Add a dedicated migration:
+```sql
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('attachments','attachments', false, 10485760,
+        array['application/pdf','image/jpeg','image/png','image/webp'])
+on conflict (id) do update set file_size_limit = excluded.file_size_limit;
+```
+- **Private bucket** (`public=false`) for business documents. Never `public=true` for contracts/payment slips.
+- `storage.objects` already has **RLS on by default** — with no policy, *every* upload fails. Add policies scoped to `bucket_id`:
+```sql
+create policy "attachments_insert" on storage.objects for insert to authenticated
+  with check (bucket_id = 'attachments');
+create policy "attachments_read"   on storage.objects for select to authenticated
+  using (bucket_id = 'attachments');
+create policy "attachments_delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'attachments' and public.is_admin());  -- restrict deletes
+```
+- **Run this on prod too.** "Bucket not found" in production almost always means you ran it only on dev.
+
+### Viewing private files: signed URLs, not public URLs
+Store the **storage path** (not a URL) in your metadata table. To view:
+```js
+const { data } = await supabase.storage.from('attachments').createSignedUrl(path, 3600);
+window.open(data.signedUrl);
+```
+`getPublicUrl` returns a 400 on a private bucket. Signed URLs expire — regenerate on each view, don't persist them.
+
+### Path layout & validation
+- Path = `${entityType}/${entityId}/${crypto.randomUUID()}.${ext}` — entity-scoped, collision-free, and lets you reason about ownership later.
+- Validate size **and** MIME client-side before upload (`upsert:false`), and again via the bucket's `file_size_limit`/`allowed_mime_types`. HEIC and some browsers omit `file.type` — fall back to an extension check.
+- Keep a metadata row (`attachments` table) with `file_url`/`storage_path`, `file_name`, `file_size`, `uploaded_by`, `uploaded_at`. The self-healing client may strip columns the table lacks — add `uploaded_at` explicitly if you want the date to survive a reload.
+
+---
+
+## Phase 14 — Mobile-friendly (this is a field app on phones over bad networks)
+
+Real users here are on phones in warehouses. Treat mobile as the primary target, not an afterthought.
+
+- **Test at 375px and 768px in DevTools** for every page. No horizontal scroll on the page body.
+- **Tables:** wrap in `overflow-x-auto` with a sensible `min-w-[...]` so columns stay legible and the *table* scrolls, not the page. Negative margins (`-mx-4 sm:mx-0`) let tables go edge-to-edge on phones.
+- **Nav:** an icon-rail + flyout/bottom-nav pattern works far better than a desktop sidebar on phones. Keep tap targets ≥ 40px.
+- **Dialogs/sheets:** cap width (`max-w-...`) and make them full-height scrollable on mobile; don't trap content off-screen.
+- **Inputs:** use proper `type`/`inputmode` (`inputmode="decimal"` for money/kg) so phones show the right keyboard.
+- **Sticky headers** inside scroll containers need `position: sticky` on the right element, or they collapse.
+- Use `tabular-nums` for all money/quantity so digits line up.
+- Empty states and skeletons everywhere — a blank screen on a slow connection reads as "broken."
+
+---
+
+## Phase 15 — Dashboard charts (recharts)
+
+- `recharts` + `<ResponsiveContainer width="100%" height={N}>` is the simplest path; give it a fixed pixel height (percentage heights collapse to 0).
+- Define brand colors once as constants; reuse across charts for consistency.
+- Pre-aggregate data in a `useMemo` (group by month/season/buyer) — don't compute inside the render.
+- Conditional `<Cell>` colors (green ≥ 0, red < 0) make profit/loss instantly readable.
+- Format axis ticks compactly (`(v)=>`${(v/1000).toFixed(0)}k``) and tooltips with full numbers.
+- Charts are heavy — they pair well with route-level `React.lazy` so they don't bloat first paint.
+
+---
+
+## Phase 16 — Data Audit & Excel reconciliation (replacing "check it by hand in Excel")
+
+Companies migrating off spreadsheets want proof the app matches their old Excel. Build a tool, don't ask them to eyeball it.
+
+- **Consistency checks** (in-app): orphaned references, totals that don't equal their parts, negative balances, missing required links, duplicate codes. Surface as a pass/warn/fail list.
+- **Excel reconciliation:** let them upload their sheet; match rows on a **composite key** (e.g. `coffee_code + supplier + date`), normalize dates and trim/upcase strings before comparing, and report rows only-in-app / only-in-Excel / value-mismatches.
+- **Fuzzy column auto-mapping:** their headers won't match yours. Auto-map by normalized similarity, but let the user override via dropdowns. Detect the header row as the **densest** row (titles/banners fool naive "first row" logic).
+- Make it admin-only and route-gated.
+
+---
+
+## Phase 17 — Demo mode (public, no-auth sandbox for selling)
+
+To show the app to prospects without giving accounts:
+- A single feature flag `VITE_DEMO_MODE=true` (keep it in `.env.local` and set it in Vercel for the demo deploy).
+- When on, **auto-login** a fixed demo user (or bypass the auth gate) so visitors land straight in the app.
+- **Know the side effect:** your "unauthenticated → redirect to /login" test will fail in demo mode because there's no redirect. Guard or skip that test when the flag is on (this is expected, not a regression).
+- For a true public sandbox, consider seeding demo data and/or making writes ephemeral. At minimum, never point demo mode at the real production data project.
+
+---
+
+## Tech-stack cheat sheet (what this app standardized on)
+
+| Concern | Choice | Note |
+|---|---|---|
+| Build | Vite 6 + React 18 + React Router 6 | |
+| Server state | TanStack Query 5 | persisted to IndexedDB for offline reads |
+| UI | Tailwind + shadcn/Radix | |
+| DB/Auth/Functions/Storage | Supabase (Postgres, Auth, Edge/Deno, Storage) | RLS is the real security boundary |
+| Hosting | Vercel (frontend) + Supabase (backend) | deploy from `main` |
+| Excel (write) | **exceljs** | styles + formulas |
+| Excel (read/import) | **xlsx** (SheetJS) | parsing only |
+| PDF | **jspdf** + **jspdf-autotable** | |
+| Charts | **recharts** | |
+| PWA/offline | vite-plugin-pwa + idb-keyval + custom queue | |
+| Icons | lucide-react | no emoji in UI |
+| Validation | zod | on high-stakes forms |
+| Image → icon PNG | sharp | rasterize SVG logo once |
+
+**Dead deps to delete on sight** (Base44 ships them, you won't use them): `@stripe/*`, `three`, `react-leaflet`, `react-quill`, `embla-carousel-react`, `canvas-confetti`, `react-markdown`, `moment` (date-fns covers it), `next-themes`. Verify 0 references first, then remove — smaller bundle = faster first paint on slow connections.
+
+---
+
 ## Final wisdom
 
 1. **Read JSONCs first.** Every schema bug we hit traces back to skipping this step.
@@ -883,7 +1040,13 @@ The app is a PWA with three offline layers:
 4. **The frontend can write columns the schema doesn't have** — the self-healing client makes this non-fatal but you should still add them properly.
 5. **Triggers are the highest-value tests.** UI tests are flaky and break when designs change. Trigger tests prove the business logic and rarely need updates.
 6. **Auto-trim text columns used as join keys.** Whitespace bugs are silent and waste days.
-7. **Document everything.** This file is your defense against repeating the same migration mistakes.
+7. **One report engine, never page-local exporters.** A shadow copy is why a report kept the old colors after a full rebrand.
+8. **exceljs to write, SheetJS to read.** SheetJS silently drops styles; never debug "why are my Excel colors missing" again.
+9. **Storage = its own SQL on every environment.** Bucket + `storage.objects` policies aren't in your table migration, and "Bucket not found" in prod means you forgot to run it there.
+10. **Private files use signed URLs, never public URLs.** And the path lives in the DB, not the URL.
+11. **Mobile is the primary target.** Field users are on phones over bad networks — 375px, scrollable tables, skeletons, offline.
+12. **Reject letter-containing values from numeric columns.** Otherwise codes (`B-023`) become numbers (`-23`).
+13. **Document everything.** This file is your defense against repeating the same migration mistakes.
 
 —
 

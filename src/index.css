@@ -102,6 +102,17 @@
     border-radius: var(--radius);
   }
 
+  /* Tabular figures so money/KG columns align digit-for-digit across rows.
+     Only affects digit glyphs — text is unaffected. (UI checklist: number legibility) */
+  table td, table th {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Pointer cursor on anything semantically interactive (UI checklist). */
+  [role="button"], [role="tab"], [role="menuitem"], summary, label[for] {
+    cursor: pointer;
+  }
+
   /* Honor user's reduced-motion preference — accessibility over delight. */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

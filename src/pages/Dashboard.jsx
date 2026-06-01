@@ -10,6 +10,7 @@ import { calcTotalPaid, calcPaymentStatus } from '@/lib/paymentUtils';
 import { Skeleton } from '@/components/ui/skeleton';
 import SupplierBalancesTable from '@/components/dashboard/SupplierBalancesTable';
 import RecentActivity from '@/components/dashboard/RecentActivity';
+import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import BalanceDateFilter, { filterByDateRange } from '@/components/dashboard/BalanceDateFilter';
 import { computeStockPools } from '@/lib/stockPools';
 import { computeAvailabilityBySupplier } from '@/lib/availabilityUtils';
@@ -523,6 +524,8 @@ export default function Dashboard() {
           )}
         </>
       )}
+
+      <DashboardCharts purchaseRecords={purchaseRecords} receipts={receipts} />
 
       <RecentActivity />
     </div>

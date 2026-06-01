@@ -32,11 +32,18 @@ test.describe('Auth & RBAC', () => {
     await ensureTestUserAndSignIn('admin');
   });
 
-  test('admin can see Permissions menu, warehouse_keeper cannot', async ({ page }) => {
+  test('admin sees the Admin nav group with Permissions in its flyout', async ({ page }) => {
     await ensureTestUserAndSignIn('admin');
     await authenticate(page, 'admin');
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    await expect(page.getByRole('link', { name: /permissions/i })).toBeVisible({ timeout: 15000 });
+
+    // The icon-rail shows group labels; submenu items live in hover flyouts.
+    const adminGroup = page.getByText('Admin', { exact: true }).first();
+    await expect(adminGroup).toBeVisible({ timeout: 15000 });
+
+    // Hover the Admin group to reveal its flyout, then confirm Permissions is reachable.
+    await adminGroup.hover();
+    await expect(page.getByRole('link', { name: /permissions/i })).toBeVisible({ timeout: 5000 });
   });
 });

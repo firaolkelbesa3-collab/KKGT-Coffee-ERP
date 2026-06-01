@@ -385,6 +385,20 @@ export default function DataAudit() {
                 </Button>
                 {excelRows && <span className="ml-3 text-sm text-muted-foreground">{excelRows.length} rows loaded</span>}
               </div>
+
+              {/* Detected-columns preview so you can confirm it's the right file. */}
+              {excelRows && (
+                <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs">
+                  <p className="font-semibold text-foreground mb-1">Detected columns in your file:</p>
+                  <p className="text-muted-foreground break-words">{excelHeaders.join('  ·  ') || '(none)'}</p>
+                  {!excelHeaders.some(h => /coffee|supplier|contract|date|kg|code/i.test(h)) && (
+                    <p className="mt-2 text-amber-700">
+                      ⚠ These don&apos;t look like {cfg.label.toLowerCase()} columns. Make sure you uploaded your
+                      source data sheet (not a downloaded report).
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 

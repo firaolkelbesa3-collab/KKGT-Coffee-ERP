@@ -2,8 +2,8 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { format, parseISO } from 'date-fns';
 
-const BRAND_GREEN = '#126433';
-const BRAND_ORANGE = '#f06721';
+const BRAND_GREEN = '#6F4E37';
+const BRAND_ORANGE = '#C8873E';
 const fmt = (n, dp = 2) => typeof n === 'number' ? n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp }) : '—';
 const fmtDate = d => { try { return format(parseISO(d), 'd MMM yyyy'); } catch { return d || '—'; } };
 

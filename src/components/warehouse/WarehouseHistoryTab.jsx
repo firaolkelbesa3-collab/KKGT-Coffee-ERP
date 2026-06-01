@@ -96,7 +96,7 @@ function FeedItem({ entry, onViewReceipt }) {
           <span className={`font-medium ${cfg.color}`}>{entry.action_type?.toLowerCase()}d</span>
         </div>
         <div className="text-xs text-muted-foreground">
-          {entry.coffee_code && <span className="font-mono font-medium text-[#126433]">{entry.coffee_code}</span>}
+          {entry.coffee_code && <span className="font-mono font-medium text-[#6F4E37]">{entry.coffee_code}</span>}
           {entry.supplier_name && <span> — {entry.supplier_name}</span>}
         </div>
         {changes.length > 0 && (
@@ -223,7 +223,7 @@ export default function WarehouseHistoryTab({ suppliers, onViewReceipt }) {
             key={q.label}
             size="sm"
             variant={quickLabel === q.label ? 'default' : 'outline'}
-            className={`text-xs h-7 ${quickLabel === q.label ? 'bg-[#126433] hover:bg-[#0e5229] text-white' : ''}`}
+            className={`text-xs h-7 ${quickLabel === q.label ? 'bg-[#6F4E37] hover:bg-[#0e5229] text-white' : ''}`}
             onClick={() => handleQuick(q)}
           >
             {q.label}
@@ -240,7 +240,7 @@ export default function WarehouseHistoryTab({ suppliers, onViewReceipt }) {
         <Button variant="outline" size="sm" className="h-7 gap-1.5 border-orange-300 text-orange-600" onClick={() => exportHistoryExcel(filtered)}>
           <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
         </Button>
-        <Button size="sm" className="h-7 gap-1.5" style={{ backgroundColor: '#126433' }} onClick={() => exportHistoryPDF(filtered)}>
+        <Button size="sm" className="h-7 gap-1.5" style={{ backgroundColor: '#6F4E37' }} onClick={() => exportHistoryPDF(filtered)}>
           <Download className="w-3.5 h-3.5" /> PDF
         </Button>
       </div>

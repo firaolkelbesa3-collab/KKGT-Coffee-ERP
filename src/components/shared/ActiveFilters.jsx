@@ -17,7 +17,7 @@ export default function ActiveFilters({ filters = [], onClearAll }) {
             fontSize: '12px', color: 'hsl(var(--foreground))',
           }}
         >
-          <span style={{ color: '#126433', fontWeight: 500 }}>{f.label}:</span>
+          <span style={{ color: '#6F4E37', fontWeight: 500 }}>{f.label}:</span>
           <span>{f.value}</span>
           <button
             onClick={f.onRemove}
@@ -35,7 +35,7 @@ export default function ActiveFilters({ filters = [], onClearAll }) {
           onClick={onClearAll}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '12px', color: '#f06721', fontWeight: 500, padding: '3px 6px',
+            fontSize: '12px', color: '#C8873E', fontWeight: 500, padding: '3px 6px',
           }}
         >
           Clear all

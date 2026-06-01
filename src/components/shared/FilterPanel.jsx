@@ -53,7 +53,7 @@ export default function FilterPanel({ open, onClose, fields = [], values = {}, o
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4" style={{ color: '#f06721' }} />
+            <Filter className="w-4 h-4" style={{ color: '#C8873E' }} />
             <h3 className="font-bold text-sm text-foreground">Filters</h3>
           </div>
           <button
@@ -134,7 +134,7 @@ export default function FilterPanel({ open, onClose, fields = [], values = {}, o
             size="sm"
             onClick={handleApply}
             className="flex-1 text-white"
-            style={{ backgroundColor: '#f06721', borderColor: '#f06721' }}
+            style={{ backgroundColor: '#C8873E', borderColor: '#C8873E' }}
           >
             Apply Filters
           </Button>
@@ -155,7 +155,7 @@ export function FilterButton({ onClick, activeCount = 0, className = '' }) {
       className={`relative flex items-center gap-2 h-9 px-3 rounded-lg border text-sm font-medium transition-colors
         ${activeCount > 0 ? 'border-orange-400 text-white' : 'border-border bg-background text-foreground hover:border-orange-400'}
         ${className}`}
-      style={activeCount > 0 ? { backgroundColor: '#f06721', borderColor: '#f06721' } : {}}
+      style={activeCount > 0 ? { backgroundColor: '#C8873E', borderColor: '#C8873E' } : {}}
     >
       <Filter className="w-4 h-4" />
       Filters

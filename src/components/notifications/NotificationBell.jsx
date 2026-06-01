@@ -51,11 +51,11 @@ export default function NotificationBell() {
         className="relative flex items-center justify-center w-10 h-10 rounded-xl hover:bg-muted transition-colors"
         aria-label="Notifications"
       >
-        <Bell className="w-5 h-5" style={{ color: '#f06721' }} />
+        <Bell className="w-5 h-5" style={{ color: '#C8873E' }} />
         {unreadCount > 0 && (
           <span
             className="absolute -top-1 -right-1 min-w-[20px] h-5 text-white text-[11px] font-bold rounded-full flex items-center justify-center px-1 leading-none"
-            style={{ backgroundColor: '#f06721' }}
+            style={{ backgroundColor: '#C8873E' }}
           >
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
@@ -75,7 +75,7 @@ export default function NotificationBell() {
                 onClick={() => markAllRead()}
                 disabled={isMarkingAll}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors disabled:opacity-50"
-                style={{ backgroundColor: '#126433' }}
+                style={{ backgroundColor: '#6F4E37' }}
               >
                 <CheckCheck className="w-3.5 h-3.5" />
                 {isMarkingAll ? 'Marking…' : 'Mark All Read'}
@@ -102,7 +102,7 @@ export default function NotificationBell() {
                     {/* Unread dot */}
                     <div className="flex-shrink-0 w-2 flex justify-center pt-2">
                       {!n.is_read && (
-                        <span className="w-2 h-2 rounded-full block" style={{ backgroundColor: '#f06721' }} />
+                        <span className="w-2 h-2 rounded-full block" style={{ backgroundColor: '#C8873E' }} />
                       )}
                     </div>
                     {/* Icon */}

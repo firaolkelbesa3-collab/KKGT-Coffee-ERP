@@ -52,7 +52,7 @@ export default function PORDateFilter({ dateRange, onChange }) {
             key={q.label}
             variant={active === q.label ? 'default' : 'outline'}
             size="sm"
-            className={cn('text-xs h-7 px-3', active === q.label && 'bg-[#126433] hover:bg-[#0e5229] text-white border-[#126433]')}
+            className={cn('text-xs h-7 px-3', active === q.label && 'bg-[#6F4E37] hover:bg-[#0e5229] text-white border-[#6F4E37]')}
             onClick={() => handleQuick(q)}
           >
             {q.label}
@@ -61,7 +61,7 @@ export default function PORDateFilter({ dateRange, onChange }) {
         <Button
           variant={showCustom ? 'default' : 'outline'}
           size="sm"
-          className={cn('text-xs h-7 px-3', showCustom && 'bg-[#126433] hover:bg-[#0e5229] text-white')}
+          className={cn('text-xs h-7 px-3', showCustom && 'bg-[#6F4E37] hover:bg-[#0e5229] text-white')}
           onClick={() => setShowCustom(v => !v)}
         >
           Custom
@@ -84,7 +84,7 @@ export default function PORDateFilter({ dateRange, onChange }) {
             <label className="text-xs text-muted-foreground mb-1 block">To</label>
             <Input type="date" className="h-8 text-sm w-40" value={custom.to} onChange={e => setCustom(v => ({ ...v, to: e.target.value }))} />
           </div>
-          <Button size="sm" className="h-8 bg-[#126433] hover:bg-[#0e5229] text-white" onClick={handleApply}>Apply</Button>
+          <Button size="sm" className="h-8 bg-[#6F4E37] hover:bg-[#0e5229] text-white" onClick={handleApply}>Apply</Button>
           <Button size="sm" variant="outline" className="h-8" onClick={handleReset}>Reset</Button>
         </div>
       )}

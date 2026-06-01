@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { queryClientInstance, asyncPersister } from '@/lib/query-client'
 import OfflineIndicator from '@/components/OfflineIndicator'
+import PWAUpdatePrompt from '@/components/PWAUpdatePrompt'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -101,6 +102,7 @@ function App() {
           <AuthenticatedApp />
         </Router>
         <OfflineIndicator />
+        <PWAUpdatePrompt />
         <Toaster />
       </PersistQueryClientProvider>
     </AuthProvider>

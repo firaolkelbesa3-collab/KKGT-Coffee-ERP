@@ -7,8 +7,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // 'prompt' so we can show a "New version — Reload" toast instead of
+      // silently swapping the bundle (which left users stuck on stale code).
+      registerType: 'prompt',
+      injectRegister: false, // we register via the useRegisterSW React hook
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'KKGT Coffee Flow',

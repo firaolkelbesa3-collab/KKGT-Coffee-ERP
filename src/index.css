@@ -9,39 +9,40 @@
     --font-sans: 'Inter', sans-serif;
     --font-display: 'Playfair Display', serif;
 
-    --background: 0 0% 97%;
-    --foreground: 140 30% 8%;
+    /* Coffee ERP palette — espresso browns + warm amber, sampled from the brand logo. */
+    --background: 30 33% 97%;
+    --foreground: 24 42% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 140 30% 8%;
+    --card-foreground: 24 42% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 140 30% 8%;
-    --primary: 145 82% 23%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 90% 55%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 22 88% 54%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+    --popover-foreground: 24 42% 12%;
+    --primary: 25 35% 30%;            /* coffee brown #6F4E37-ish */
+    --primary-foreground: 40 44% 96%;
+    --secondary: 32 58% 52%;          /* warm amber #C8873E */
+    --secondary-foreground: 24 45% 14%;
+    --muted: 30 20% 94%;
+    --muted-foreground: 24 12% 40%;
+    --accent: 30 62% 48%;             /* tan/amber accent */
+    --accent-foreground: 40 44% 96%;
+    --destructive: 4 70% 47%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 145 82% 23%;
-    --chart-1: 145 82% 23%;
-    --chart-2: 22 88% 54%;
-    --chart-3: 30 90% 55%;
-    --chart-4: 0 72% 51%;
-    --chart-5: 200 40% 40%;
+    --border: 28 18% 86%;
+    --input: 28 18% 86%;
+    --ring: 25 35% 30%;
+    --chart-1: 25 35% 33%;            /* coffee */
+    --chart-2: 32 58% 52%;            /* amber */
+    --chart-3: 95 45% 33%;            /* leaf green accent */
+    --chart-4: 4 70% 47%;             /* red */
+    --chart-5: 30 25% 55%;
     --radius: 0.625rem;
-    --sidebar-background: 145 82% 15%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 22 88% 54%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 145 82% 20%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 145 60% 22%;
-    --sidebar-ring: 22 88% 54%;
+    --sidebar-background: 24 45% 12%;   /* dark espresso */
+    --sidebar-foreground: 40 30% 92%;
+    --sidebar-primary: 32 60% 54%;      /* amber highlight */
+    --sidebar-primary-foreground: 24 45% 12%;
+    --sidebar-accent: 24 35% 18%;
+    --sidebar-accent-foreground: 40 30% 92%;
+    --sidebar-border: 24 28% 22%;
+    --sidebar-ring: 32 60% 54%;
   }
 
   .dark {

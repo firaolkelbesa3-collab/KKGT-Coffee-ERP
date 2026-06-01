@@ -5,9 +5,9 @@ import {
 } from 'recharts';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
-const GREEN = '#126433';
-const ORANGE = '#f06721';
-const AMBER = '#f59e0b';
+const GREEN = '#6F4E37';
+const ORANGE = '#C8873E';
+const AMBER = '#E0A458';
 
 function fmtKg(n) {
   if (n == null || isNaN(n)) return '0';
@@ -125,7 +125,7 @@ export default function DashboardCharts({ purchaseRecords = [], receipts = [] })
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 11 }} stroke="#999" tickFormatter={fmtKg} />
             <YAxis type="category" dataKey="type" tick={{ fontSize: 11 }} stroke="#999" width={110} />
-            <Tooltip formatter={(v) => `${fmtKg(v)} KG`} contentStyle={{ borderRadius: 8, fontSize: 12 }} cursor={{ fill: '#12643308' }} />
+            <Tooltip formatter={(v) => `${fmtKg(v)} KG`} contentStyle={{ borderRadius: 8, fontSize: 12 }} cursor={{ fill: '#6F4E3708' }} />
             <Bar dataKey="kg" name="Received KG" fill={GREEN} radius={[0, 6, 6, 0]} barSize={18} />
           </BarChart>
         </ResponsiveContainer>

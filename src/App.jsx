@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { queryClientInstance, asyncPersister } from '@/lib/query-client'
@@ -11,27 +12,37 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import PendingApproval from '@/components/PendingApproval';
 import Login from '@/pages/Login';
 import AppLayout from '@/components/layout/AppLayout';
-import Dashboard from '@/pages/Dashboard';
-import MasterData from '@/pages/MasterData';
-import PurchaseRegistration from '@/pages/PurchaseRegistration.jsx';
-import WarehouseReceiptPage from '@/pages/WarehouseReceipt';
-import SampleLogPage from '@/pages/SampleLogPage';
-import ProcessingLogPage from '@/pages/ProcessingLogPage';
-import OutputReportPage from '@/pages/OutputReportPage';
-import Reports from '@/pages/Reports';
-import ExportContracts from '@/pages/ExportContracts';
-import StockReport from '@/pages/StockReport.jsx';
-import NotificationSettings from '@/pages/NotificationSettings';
-import BuyerInspections from '@/pages/BuyerInspections.jsx';
-import MaterialsRegister from '@/pages/MaterialsRegister.jsx';
-import BagLedger from '@/pages/BagLedger.jsx';
-import ActivityLog from '@/pages/ActivityLog.jsx';
-import NotificationHistory from '@/pages/NotificationHistory.jsx';
-import Permissions from '@/pages/Permissions.jsx';
-import UserActivityReport from '@/pages/UserActivityReport';
-import PurchaseOrdersReport from '@/pages/PurchaseOrdersReport';
-import WarehouseReceiptReport from '@/pages/WarehouseReceiptReport';
-import DataImport from '@/pages/DataImport.jsx';
+
+// Route pages are lazy-loaded so the first paint downloads only the shell +
+// the current route, not all 21 pages. Cuts initial JS dramatically on slow
+// connections. Each becomes its own chunk fetched on navigation.
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const MasterData = lazy(() => import('@/pages/MasterData'));
+const PurchaseRegistration = lazy(() => import('@/pages/PurchaseRegistration.jsx'));
+const WarehouseReceiptPage = lazy(() => import('@/pages/WarehouseReceipt'));
+const SampleLogPage = lazy(() => import('@/pages/SampleLogPage'));
+const ProcessingLogPage = lazy(() => import('@/pages/ProcessingLogPage'));
+const OutputReportPage = lazy(() => import('@/pages/OutputReportPage'));
+const Reports = lazy(() => import('@/pages/Reports'));
+const ExportContracts = lazy(() => import('@/pages/ExportContracts'));
+const StockReport = lazy(() => import('@/pages/StockReport.jsx'));
+const NotificationSettings = lazy(() => import('@/pages/NotificationSettings'));
+const BuyerInspections = lazy(() => import('@/pages/BuyerInspections.jsx'));
+const MaterialsRegister = lazy(() => import('@/pages/MaterialsRegister.jsx'));
+const BagLedger = lazy(() => import('@/pages/BagLedger.jsx'));
+const ActivityLog = lazy(() => import('@/pages/ActivityLog.jsx'));
+const NotificationHistory = lazy(() => import('@/pages/NotificationHistory.jsx'));
+const Permissions = lazy(() => import('@/pages/Permissions.jsx'));
+const UserActivityReport = lazy(() => import('@/pages/UserActivityReport'));
+const PurchaseOrdersReport = lazy(() => import('@/pages/PurchaseOrdersReport'));
+const WarehouseReceiptReport = lazy(() => import('@/pages/WarehouseReceiptReport'));
+const DataImport = lazy(() => import('@/pages/DataImport.jsx'));
+
+const RouteFallback = () => (
+  <div className="flex items-center justify-center py-24">
+    <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+  </div>
+);
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -54,6 +65,7 @@ const AuthenticatedApp = () => {
   }
 
   return (
+    <Suspense fallback={<RouteFallback />}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/pending-approval" element={<PendingApproval />} />
@@ -84,6 +96,7 @@ const AuthenticatedApp = () => {
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </Suspense>
   );
 };
 

@@ -1,6 +1,6 @@
-import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
+import { exportReportPDF } from '@/lib/reportEngine';
 
 function fmt(n, dec = 0) {
   if (n == null || isNaN(n)) return '';
@@ -14,71 +14,33 @@ const ROLE_LABELS = {
 };
 
 export function exportUserReportPDF({ filteredStats, summary, dateRange }) {
-  const doc = new jsPDF({ orientation: 'landscape' });
-
-  // Header
-  doc.setFontSize(16);
-  doc.setFont(undefined, 'bold');
-  doc.text('KKGT Import Export PLC', 14, 16);
-  doc.setFontSize(12);
-  doc.setFont(undefined, 'normal');
-  doc.text('User Activity Report', 14, 23);
-  doc.setFontSize(9);
-  doc.setTextColor(100);
-  doc.text(`Period: ${dateRange.from || 'All'} to ${dateRange.to || 'All'}`, 14, 29);
-  doc.text(`Generated: ${format(new Date(), 'MMM d, yyyy HH:mm')}`, 14, 34);
-  doc.setTextColor(0);
-
-  // Summary
-  doc.setFontSize(9);
-  doc.setFont(undefined, 'bold');
-  doc.text(`Active Users: ${summary.active}   |   Purchases: ${summary.totalPurchases}   |   Payments: ${summary.totalPayments}   |   Warehouse Receipts: ${summary.totalWarehouse}`, 14, 41);
-
-  // Table
   const headers = ['#', 'User', 'Role', 'Purchases', 'Payments', 'Warehouse', 'Processing', 'Output', 'ETB Handled', 'Last Active', 'Status'];
-  const colWidths = [8, 50, 22, 20, 20, 22, 22, 18, 30, 28, 22];
-  let y = 50;
-  const rowH = 7;
-
-  // Header row
-  doc.setFillColor(240, 240, 240);
-  doc.rect(14, y, colWidths.reduce((a, b) => a + b, 0), rowH, 'F');
-  doc.setFontSize(7.5);
-  doc.setFont(undefined, 'bold');
-  let x = 14;
-  headers.forEach((h, i) => { doc.text(h, x + 1, y + 5); x += colWidths[i]; });
-  y += rowH;
-
-  doc.setFont(undefined, 'normal');
-  filteredStats.forEach((u, idx) => {
-    if (y > 185) { doc.addPage(); y = 20; }
-    if (idx % 2 === 0) {
-      doc.setFillColor(252, 252, 252);
-      doc.rect(14, y, colWidths.reduce((a, b) => a + b, 0), rowH, 'F');
-    }
-    const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = filteredStats.map((u, idx) => {
     const lastSlice = u.lastActive ? u.lastActive.slice(0, 10) : null;
     const statusTxt = !lastSlice ? 'Inactive' : lastSlice === today ? 'Active' : 'Recent';
-    const row = [
-      String(idx + 1),
+    return [
+      idx + 1,
       u.name || u.email,
       ROLE_LABELS[u.role] || u.role || '',
-      String(u.purchasesCreated),
-      String(u.paymentsRecorded),
-      String(u.warehouseReceipts),
-      String(u.processingEntries),
-      String(u.outputReports),
+      u.purchasesCreated,
+      u.paymentsRecorded,
+      u.warehouseReceipts,
+      u.processingEntries,
+      u.outputReports,
       u.totalEtbHandled > 0 ? fmt(u.totalEtbHandled) : '—',
       lastSlice || 'Never',
       statusTxt,
     ];
-    x = 14;
-    doc.setFontSize(7.5);
-    row.forEach((cell, i) => { doc.text(String(cell).slice(0, 25), x + 1, y + 5); x += colWidths[i]; });
-    y += rowH;
   });
-
-  doc.save(`KKGT_User_Activity_${dateRange.from}_${dateRange.to}.pdf`);
+  const period = `Period: ${dateRange.from || 'All'} → ${dateRange.to || 'All'}  ·  Active ${summary.active} · Purchases ${summary.totalPurchases} · Payments ${summary.totalPayments}`;
+  exportReportPDF({
+    title: 'User Activity Report',
+    subtitle: period,
+    headers,
+    rows,
+    filename: `user-activity-${dateRange.from || 'all'}-${dateRange.to || 'all'}`,
+  });
 }
 
 export function exportUserReportExcel({ filteredStats, purchases, receipts, processingLogs, outputReports, dateRange }) {
@@ -144,7 +106,7 @@ export function exportUserReportExcel({ filteredStats, purchases, receipts, proc
   });
 
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-    ['KKGT Import Export PLC — User Activity Report'],
+    ['Coffee ERP — User Activity Report'],
     [`Period: ${dateRange.from} to ${dateRange.to}`],
     [`Generated: ${format(new Date(), 'MMM d, yyyy HH:mm')}`],
   ]), 'Info');

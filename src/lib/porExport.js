@@ -22,9 +22,9 @@ export function exportSinglePurchasePDF(purchase, payments, receipt) {
   const W = 210, M = 15;
 
   // Header band
-  doc.setFillColor(18, 100, 51);
+  doc.setFillColor(111, 78, 55);
   doc.rect(0, 0, W, 28, 'F');
-  doc.setFillColor(240, 103, 33);
+  doc.setFillColor(200, 135, 62);
   doc.rect(0, 28, W, 3, 'F');
 
   doc.setTextColor(255, 255, 255);
@@ -75,7 +75,7 @@ export function exportSinglePurchasePDF(purchase, payments, receipt) {
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(18, 100, 51);
+  doc.setTextColor(111, 78, 55);
   doc.text('PAYMENTS:', M, y); y += 5;
 
   doc.setTextColor(30, 30, 30);
@@ -126,9 +126,9 @@ export function exportPORPDF({ filtered, summary, dateRange }) {
   const W = 297, M = 10;
 
   const addHeader = (page) => {
-    doc.setFillColor(18, 100, 51);
+    doc.setFillColor(111, 78, 55);
     doc.rect(0, 0, W, 22, 'F');
-    doc.setFillColor(240, 103, 33);
+    doc.setFillColor(200, 135, 62);
     doc.rect(0, 22, W, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(13);
@@ -197,7 +197,7 @@ export function exportPORPDF({ filtered, summary, dateRange }) {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(18, 100, 51);
+    doc.setTextColor(111, 78, 55);
     doc.text(`${status} (${rows.length})`, M, y); y += 5;
 
     // Table header

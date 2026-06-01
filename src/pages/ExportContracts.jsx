@@ -212,9 +212,9 @@ function exportContractPDF(contract) {
   const fmtD = d => { try { return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return d || '—'; } };
   const fmtN = (n, dp = 2) => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
 
-  doc.setFillColor(18, 100, 51);
+  doc.setFillColor(46, 26, 18);
   doc.rect(0, 0, W, 28, 'F');
-  doc.setFillColor(240, 103, 33);
+  doc.setFillColor(200, 135, 62);
   doc.rect(0, 28, W, 3, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14); doc.setFont('helvetica', 'bold');

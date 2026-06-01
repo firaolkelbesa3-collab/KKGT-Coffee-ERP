@@ -3,8 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
-import jsPDF from 'jspdf';
-import * as XLSX from 'xlsx';
+import { exportPDF as exportPDFReport, exportXLSX as exportXLSXReport } from '@/lib/exportUtils';
 
 function fmt(n, d = 2) {
   if (n == null || isNaN(n) || n === '') return '—';
@@ -119,101 +118,26 @@ export default function ExportContractsReportTable({ contracts = [], isLoading }
   // Frozen column left offsets
   const frozenLeftOffset = [0, 40]; // # at 0, Contract No at 40px
 
-  function exportPDF() {
-    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-    const W = 297, M = 8;
-    doc.setFillColor(18, 100, 51);
-    doc.rect(0, 0, W, 18, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-    doc.text('Coffee ERP — Export Contracts Report', M, 12);
-    doc.setFontSize(7); doc.setFont('helvetica', 'normal');
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, W - M, 12, { align: 'right' });
-
-    let y = 24;
-    const colKeys = COLS.map(c => c.key);
-    const colLabels = COLS.map(c => c.label);
-    const colWidths = [8, 30, 30, 22, 28, 20, 20, 22, 16, 28, 28, 24, 28, 18, 26, 26, 22, 18];
-
-    // Header
-    doc.setFillColor(240, 240, 240); doc.rect(M, y - 4, W - M * 2, 6, 'F');
-    doc.setTextColor(50, 50, 50); doc.setFontSize(5.5); doc.setFont('helvetica', 'bold');
-    let x = M;
-    colLabels.forEach((lbl, i) => {
-      doc.text(lbl, x + colWidths[i] / 2, y, { align: 'center', maxWidth: colWidths[i] - 1 });
-      x += colWidths[i];
-    });
-    y += 5;
-
-    // Rows
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(5);
-    rows.forEach((row, ri) => {
-      if (y > 195) { doc.addPage(); y = 15; }
-      if (ri % 2 === 0) { doc.setFillColor(249, 249, 249); doc.rect(M, y - 3.5, W - M * 2, 5, 'F'); }
-      x = M;
-      colKeys.forEach((key, i) => {
-        let val = row[key];
-        let text = '—';
-        if (key === 'export_date' && val) text = fmtD(val);
-        else if (key === 'export_kg' && val != null) text = fmt(val, 0);
-        else if (key === 'total_usd' && val != null) text = `$${fmt(val, 2)}`;
-        else if (key === 'profit_usd' && val != null) text = `$${fmt(val, 2)}`;
-        else if (['usd_rate'].includes(key) && val != null) text = fmt(val, 4);
-        else if (['total_expenses','export_sales','reject_sales','grand_total','profit_etb'].includes(key) && val != null) text = fmt(val, 0);
-        else if (val != null && val !== '—') text = String(val);
-        doc.setTextColor(50, 50, 50);
-        doc.text(text, x + colWidths[i] / 2, y, { align: 'center', maxWidth: colWidths[i] - 1 });
-        x += colWidths[i];
-      });
-      y += 5;
-    });
-
-    // Totals row
-    y += 2;
-    doc.setFillColor(220, 240, 220); doc.rect(M, y - 3.5, W - M * 2, 5.5, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(5.5); doc.setTextColor(18, 100, 51);
-    x = M;
-    colKeys.forEach((key, i) => {
-      let text = '';
-      if (key === '#') text = 'TOTAL';
-      else if (key === 'export_kg') text = fmt(totals.export_kg, 0);
-      else if (key === 'total_usd') text = `$${fmt(totals.total_usd, 2)}`;
-      else if (key === 'profit_etb') text = fmt(totals.profit_etb, 0);
-      else if (key === 'profit_usd') text = `$${fmt(totals.profit_usd, 2)}`;
-      if (text) doc.text(text, x + colWidths[i] / 2, y, { align: 'center', maxWidth: colWidths[i] - 1 });
-      x += colWidths[i];
-    });
-
-    doc.save(`CoffeeERP-Export-Contracts-Report-${new Date().toISOString().slice(0, 10)}.pdf`);
-  }
-
-  function exportExcel() {
-    const header = COLS.map(c => c.label);
+  // Build flat headers + rows for the shared report engine. Numeric columns are
+  // passed as real numbers (so the engine formats + totals them); dates/text stay strings.
+  const NUMERIC_KEYS = ['export_kg', 'total_usd', 'usd_rate', 'total_expenses', 'export_sales', 'reject_sales', 'grand_total', 'profit_etb', 'profit_usd'];
+  function buildExportRows() {
+    const headers = COLS.map(c => c.label);
     const dataRows = rows.map(row => COLS.map(col => {
       const val = row[col.key];
       if (col.key === 'export_date' && val) return fmtD(val);
-      if (['export_kg','total_usd','usd_rate','total_expenses','export_sales','reject_sales','grand_total','profit_etb','profit_usd'].includes(col.key)) {
-        return val != null ? Number(val) : '';
-      }
-      return val != null ? val : '';
+      if (NUMERIC_KEYS.includes(col.key)) return val != null ? Number(val) : '';
+      return val != null && val !== '—' ? val : '';
     }));
-
-    // Totals row
-    const totalsRow = COLS.map(col => {
-      if (col.key === '#') return 'TOTAL';
-      if (col.key === 'export_kg') return totals.export_kg;
-      if (col.key === 'total_usd') return totals.total_usd;
-      if (col.key === 'profit_etb') return totals.profit_etb;
-      if (col.key === 'profit_usd') return totals.profit_usd;
-      return '';
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet([header, ...dataRows, totalsRow]);
-    // Column widths
-    ws['!cols'] = COLS.map(c => ({ wch: Math.round(c.width / 7) }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Export Contracts');
-    XLSX.writeFile(wb, `CoffeeERP-Export-Contracts-Report-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    return { headers, dataRows };
+  }
+  function exportPDF() {
+    const { headers, dataRows } = buildExportRows();
+    exportPDFReport('Export Contracts Report', headers, dataRows, true);
+  }
+  function exportExcel() {
+    const { headers, dataRows } = buildExportRows();
+    exportXLSXReport('export-contracts-report', 'Export Contracts Report', headers, dataRows, true);
   }
 
   if (isLoading) {

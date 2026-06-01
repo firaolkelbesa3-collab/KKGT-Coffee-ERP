@@ -76,11 +76,17 @@ function isIndexHeader(h) {
   return /^(#|no\.?|s\/?n|sr\.?(\s*no)?|序)$/i.test(String(h).trim());
 }
 
-// Build a totals row that SUMs every numeric, non-index column.
+// Columns that are numeric but NOT meaningful to sum (rates, unit prices,
+// percentages, averages, moisture, grade). Summing these is nonsense.
+function isNonSummableHeader(h) {
+  return /\b(unit\s*price|price|rate|%|percent|per\b|comm(ission)?\s*%?|avg|average|moisture|grade|year|month)\b/i.test(String(h));
+}
+
+// Build a totals row that SUMs every summable numeric, non-index column.
 // Returns { values: number|null[], label } where label cell holds "TOTAL".
 function computeAutoTotals(headers, rows, numericCols) {
   const sums = headers.map((h, c) => {
-    if (!numericCols[c] || isIndexHeader(h)) return null;
+    if (!numericCols[c] || isIndexHeader(h) || isNonSummableHeader(h)) return null;
     let s = 0, any = false;
     for (const r of rows) { const n = toNumber(r[c]); if (n != null) { s += n; any = true; } }
     return any ? s : null;

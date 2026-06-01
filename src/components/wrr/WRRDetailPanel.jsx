@@ -39,7 +39,7 @@ export default function WRRDetailPanel({ receipt, purchase, sampleKg, processing
     const pageW = doc.internal.pageSize.getWidth();
 
     // Green header
-    doc.setFillColor(18, 100, 51);
+    doc.setFillColor(46, 26, 18);
     doc.rect(0, 0, pageW, 30, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(16);
@@ -50,7 +50,7 @@ export default function WRRDetailPanel({ receipt, purchase, sampleKg, processing
     doc.text('Warehouse Receipt', pageW / 2, 21, { align: 'center' });
 
     // Orange band
-    doc.setFillColor(240, 103, 33);
+    doc.setFillColor(200, 135, 62);
     doc.rect(0, 30, pageW, 6, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
@@ -79,7 +79,7 @@ export default function WRRDetailPanel({ receipt, purchase, sampleKg, processing
     const sectionHeader = (title) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.setTextColor(18, 100, 51);
+      doc.setTextColor(111, 78, 55);
       doc.text(title, lx, y);
       doc.setTextColor(0, 0, 0);
       y += 6;

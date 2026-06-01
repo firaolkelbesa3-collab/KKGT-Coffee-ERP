@@ -39,9 +39,9 @@ function exportSummaryPDF(agentSummary, supplierSummary, agentTotals, supplierTo
 
   doc.setFontSize(14);
   doc.setFont(undefined, 'bold');
-  doc.setTextColor(204, 85, 0);
+  doc.setTextColor(200, 135, 62);
   doc.text('Coffee ERP', margin, 12);
-  doc.setTextColor(13, 100, 50);
+  doc.setTextColor(111, 78, 55);
   doc.setFontSize(11);
   doc.text('Bag Ledger — Summary', margin, 18);
   doc.setFontSize(8);
@@ -53,13 +53,13 @@ function exportSummaryPDF(agentSummary, supplierSummary, agentTotals, supplierTo
   const renderSection = (title, rows, keyLabel) => {
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
-    doc.setTextColor(13, 100, 50);
+    doc.setTextColor(111, 78, 55);
     doc.text(title, margin, y); y += 6;
 
     const headers = [keyLabel, 'Received', 'Loss (1%)', 'Used', 'Net to Return', 'Cash ETB', 'Paid ETB'];
     const colW = (pageW - margin * 2) / headers.length;
     doc.setFontSize(8);
-    doc.setFillColor(13, 100, 50);
+    doc.setFillColor(46, 26, 18);
     doc.setTextColor(255, 255, 255);
     doc.rect(margin, y, pageW - margin * 2, 6, 'F');
     headers.forEach((h, i) => doc.text(h, margin + i * colW + 2, y + 4));

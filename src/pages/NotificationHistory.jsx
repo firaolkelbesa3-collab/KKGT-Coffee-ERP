@@ -12,8 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Search, FileText, FileSpreadsheet, Bell } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import { exportPDF as exportPDFReport, exportXLSX as exportXLSXReport } from '@/lib/exportUtils';
 
 const PAGE_SIZE = 50;
 
@@ -94,64 +93,18 @@ export default function NotificationHistory() {
 
   const unreadCount = filtered.filter(n => !n.is_read).length;
 
-  const exportXLSX = () => {
-    const wb = XLSX.utils.book_new();
-    const headers = ['Date', 'Type', 'Title', 'Message', 'Severity', 'Status', 'Recipient'];
-    const rows = filtered.map(n => [
-      fmtDate(n.created_date),
-      TYPE_LABELS[n.type] || n.type,
-      n.title,
-      n.message,
-      n.severity || 'info',
-      n.is_read ? 'Read' : 'Unread',
-      n.recipient_email,
-    ]);
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    ws['!cols'] = headers.map(() => ({ wch: 30 }));
-    XLSX.utils.book_append_sheet(wb, ws, 'Notifications');
-    XLSX.writeFile(wb, `CoffeeERP_Notifications_${format(new Date(), 'yyyyMMdd')}.xlsx`);
-  };
-
-  const exportPDF = () => {
-    const doc = new jsPDF({ orientation: 'landscape' });
-    const pw = doc.internal.pageSize.getWidth();
-    doc.setFillColor(18, 100, 51);
-    doc.rect(0, 0, pw, 18, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(255, 255, 255);
-    doc.text('Coffee ERP — Notification History', 12, 12);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pw - 12, 12, { align: 'right' });
-    const headers = ['Date', 'Type', 'Title', 'Message', 'Severity', 'Status'];
-    const colW = (pw - 24) / headers.length;
-    let y = 26;
-    doc.setFillColor(240, 103, 33);
-    doc.rect(12, y, pw - 24, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(255, 255, 255);
-    headers.forEach((h, i) => doc.text(h.toUpperCase(), 13 + i * colW, y + 5));
-    y += 7;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(30, 30, 30);
-    filtered.slice(0, 200).forEach((n, ri) => {
-      if (y > doc.internal.pageSize.getHeight() - 14) { doc.addPage(); y = 14; }
-      if (ri % 2 === 0) { doc.setFillColor(248, 253, 248); doc.rect(12, y, pw - 24, 6, 'F'); }
-      const cells = [
-        fmtDate(n.created_date),
-        (TYPE_LABELS[n.type] || n.type || '').replace(/[^\w\s—]/g, '').trim().slice(0, 22),
-        (n.title || '').slice(0, 35),
-        (n.message || '').slice(0, 50),
-        n.severity || 'info',
-        n.is_read ? 'Read' : 'Unread',
-      ];
-      cells.forEach((c, i) => doc.text(String(c), 13 + i * colW, y + 4.5));
-      y += 6;
-    });
-    doc.save(`CoffeeERP_Notifications_${format(new Date(), 'yyyyMMdd')}.pdf`);
-  };
+  const NOTIF_HEADERS = ['Date', 'Type', 'Title', 'Message', 'Severity', 'Status', 'Recipient'];
+  const notifRows = () => filtered.map(n => [
+    fmtDate(n.created_date),
+    TYPE_LABELS[n.type] || n.type,
+    n.title,
+    n.message,
+    n.severity || 'info',
+    n.is_read ? 'Read' : 'Unread',
+    n.recipient_email,
+  ]);
+  const exportXLSX = () => exportXLSXReport('notification-history', 'Notification History', NOTIF_HEADERS, notifRows());
+  const exportPDF = () => exportPDFReport('Notification History', NOTIF_HEADERS, notifRows());
 
   return (
     <div>

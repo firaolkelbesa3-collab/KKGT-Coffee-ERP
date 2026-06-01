@@ -8,8 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, SlidersHorizontal, FileText, Download, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import jsPDF from 'jspdf';
-import * as XLSX from 'xlsx';
+import { exportPDF as exportPDFReport, exportXLSX as exportXLSXReport } from '@/lib/exportUtils';
 
 import PageHeader from '@/components/shared/PageHeader';
 import TablePagination from '@/components/shared/TablePagination';
@@ -200,179 +199,33 @@ export default function WarehouseReceiptReport() {
   // Minutes since last update
   const minutesAgo = Math.floor((new Date() - lastUpdated) / 60000);
 
-  // --- EXPORT PDF ---
-  const handleExportPDF = () => {
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-
-    // Cover page
-    doc.setFillColor(18, 100, 51);
-    doc.rect(0, 0, pageW, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('COFFEE ERP — ETHIOPIA', pageW / 2, 18, { align: 'center' });
-    doc.setFontSize(13);
-    doc.text('Warehouse Receipt Report', pageW / 2, 28, { align: 'center' });
-    doc.setFillColor(240, 103, 33);
-    doc.rect(0, 40, pageW, 8, 'F');
-    doc.setFontSize(9);
-    doc.text('CONFIDENTIAL', pageW / 2, 45.5, { align: 'center' });
-
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Generated: ${format(new Date(), 'd MMM yyyy HH:mm')}`, 20, 58);
-    doc.text(`Total Records: ${filtered.length}`, 20, 65);
-
-    // Summary
-    const totalRec = receipts.length;
-    const totalKg = receipts.reduce((s, r) => s + (r.warehouse_received_net_kg || 0), 0);
-    const totalShrink = receipts.reduce((s, r) => s + ((r.warehouse_received_net_kg || 0) - (r.net_dispatch_weight_kg || 0)), 0);
-    const grnPend = receipts.filter(r => !r.grn_code).length;
-
-    let y = 78;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(18, 100, 51);
-    doc.text('SUMMARY', 20, y); y += 7;
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Total Receipts: ${totalRec}`, 20, y); y += 6;
-    doc.text(`Total Received KG: ${fmt(totalKg)} KG`, 20, y); y += 6;
-    doc.text(`Total Shrinkage KG: ${totalShrink >= 0 ? '+' : ''}${fmt(totalShrink)} KG`, 20, y); y += 6;
-    doc.text(`GRN Pending: ${grnPend}`, 20, y); y += 10;
-
-    // Table
-    doc.addPage();
-    doc.setFillColor(18, 100, 51);
-    doc.rect(0, 0, pageW, 12, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('Warehouse Receipt Report — Full Table', pageW / 2, 8, { align: 'center' });
-
-    y = 20;
-    const cols = ['#', 'Coffee Code', 'Supplier', 'GRN', 'Date', 'Dispatch KG', 'Received KG', 'Shrinkage', 'Remaining'];
-    const colWidths = [8, 38, 30, 20, 22, 24, 24, 22, 22];
-    const startX = 10;
-
-    doc.setFillColor(240, 103, 33);
-    doc.rect(startX, y - 5, colWidths.reduce((a, b) => a + b, 0), 8, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
-    let cx = startX;
-    cols.forEach((col, i) => { doc.text(col, cx + 1, y); cx += colWidths[i]; });
-    y += 5;
-
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'normal');
-    filtered.forEach((r, idx) => {
-      if (y > 270) {
-        doc.addPage();
-        y = 15;
-      }
-      const sampleKg = sampleKgBySupplier[r.supplier_name] || 0;
-      const procKg = processingKgBySupplier[r.supplier_name] || 0;
-      const shrink = (r.warehouse_received_net_kg || 0) - (r.net_dispatch_weight_kg || 0);
-      const remaining = (r.warehouse_received_net_kg || 0) - sampleKg - procKg;
-      const rowData = [
-        String(idx + 1),
-        r.coffee_code || '—',
-        r.supplier_name || '—',
-        r.grn_code || '—',
-        r.received_date ? format(new Date(r.received_date), 'dd/MM/yy') : '—',
-        fmt(r.net_dispatch_weight_kg),
-        fmt(r.warehouse_received_net_kg),
-        `${shrink >= 0 ? '+' : ''}${fmt(shrink)}`,
-        fmt(remaining),
-      ];
-      if (idx % 2 === 0) { doc.setFillColor(248, 248, 248); doc.rect(startX, y - 4, colWidths.reduce((a, b) => a + b, 0), 6, 'F'); }
-      cx = startX;
-      rowData.forEach((val, i) => { doc.text(val, cx + 1, y); cx += colWidths[i]; });
-      y += 6;
-    });
-
-    // Totals row
-    doc.setFillColor(240, 103, 33);
-    doc.rect(startX, y - 4, colWidths.reduce((a, b) => a + b, 0), 7, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    const totalReceivedAll = filtered.reduce((s, r) => s + (r.warehouse_received_net_kg || 0), 0);
-    const totalShrinkAll = filtered.reduce((s, r) => s + ((r.warehouse_received_net_kg || 0) - (r.net_dispatch_weight_kg || 0)), 0);
-    const totalBags = filtered.reduce((s, r) => s + (r.bags_received || 0), 0);
-    doc.text('TOTAL', startX + 1, y);
-    doc.text(fmt(totalReceivedAll), startX + colWidths.slice(0, 6).reduce((a, b) => a + b, 0) + 1, y);
-    doc.text(`${totalShrinkAll >= 0 ? '+' : ''}${fmt(totalShrinkAll)}`, startX + colWidths.slice(0, 7).reduce((a, b) => a + b, 0) + 1, y);
-
-    // Watermark on last page
-    doc.setTextColor(220, 220, 220);
-    doc.setFontSize(50);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CONFIDENTIAL', pageW / 2, 150, { align: 'center', angle: 45 });
-
-    const dateStr = format(new Date(), 'dd-MM-yyyy');
-    doc.save(`CoffeeERP-Warehouse-Receipt-Report-${dateStr}.pdf`);
-  };
-
-  // --- EXPORT EXCEL ---
-  const handleExportExcel = () => {
-    const wb = XLSX.utils.book_new();
-
-    // Single sheet with all columns + totals row
-    const allRows = filtered.map((r, idx) => {
-      const sampleKg = sampleKgBySupplier[r.supplier_name] || 0;
-      const procKg = processingKgBySupplier[r.supplier_name] || 0;
-      const shrink = (r.warehouse_received_net_kg || 0) - (r.net_dispatch_weight_kg || 0);
-      const remaining = (r.warehouse_received_net_kg || 0) - sampleKg - procKg;
-      return {
-        '#': idx + 1,
-        'Coffee Code': r.coffee_code || '',
-        'Supplier': r.supplier_name || '',
-        'GRN Code': r.grn_code || '',
-        'Dispatch No': r.dispatch_no || '',
-        'Received Date': r.received_date ? format(new Date(r.received_date), 'd MMM yyyy') : '',
-        'Dispatch KG (REF)': r.net_dispatch_weight_kg || 0,
-        'Received KG': r.warehouse_received_net_kg || 0,
-        'Shrinkage KG': shrink,
-        'Samples KG': sampleKg,
-        'Processing KG': procKg,
-        'Remaining KG': remaining,
-        'Bags Received': r.bags_received || 0,
-        'Remark': r.remark || '',
-      };
-    });
-
-    // Totals row
-    const totDispatch = filtered.reduce((s, r) => s + (r.net_dispatch_weight_kg || 0), 0);
-    const totReceived = filtered.reduce((s, r) => s + (r.warehouse_received_net_kg || 0), 0);
-    const totShrink = filtered.reduce((s, r) => s + ((r.warehouse_received_net_kg || 0) - (r.net_dispatch_weight_kg || 0)), 0);
-    const totSamples = filtered.reduce((s, r) => s + (sampleKgBySupplier[r.supplier_name] || 0), 0);
-    const totProcessing = filtered.reduce((s, r) => s + (processingKgBySupplier[r.supplier_name] || 0), 0);
-    const totRemaining = filtered.reduce((s, r) => s + ((r.warehouse_received_net_kg || 0) - (sampleKgBySupplier[r.supplier_name] || 0) - (processingKgBySupplier[r.supplier_name] || 0)), 0);
-    const totBags = filtered.reduce((s, r) => s + (r.bags_received || 0), 0);
-    allRows.push({
-      '#': 'TOTAL',
-      'Coffee Code': '',
-      'Supplier': '',
-      'GRN Code': '',
-      'Dispatch No': '',
-      'Received Date': '',
-      'Dispatch KG (REF)': totDispatch,
-      'Received KG': totReceived,
-      'Shrinkage KG': totShrink,
-      'Samples KG': totSamples,
-      'Processing KG': totProcessing,
-      'Remaining KG': totRemaining,
-      'Bags Received': totBags,
-      'Remark': '',
-    });
-
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allRows), 'Warehouse Receipts');
-    const dateStr = format(new Date(), 'dd-MM-yyyy');
-    XLSX.writeFile(wb, `CoffeeERP-Warehouse-Report-${dateStr}.xlsx`);
-  };
+  // Build flat headers + rows for the shared report engine.
+  const WRR_HEADERS = ['#', 'Coffee Code', 'Supplier', 'GRN Code', 'Dispatch No', 'Received Date',
+    'Dispatch KG', 'Received KG', 'Shrinkage KG', 'Samples KG', 'Processing KG', 'Remaining KG', 'Bags', 'Remark'];
+  const buildWRRRows = () => filtered.map((r, idx) => {
+    const sampleKg = sampleKgBySupplier[r.supplier_name] || 0;
+    const procKg = processingKgBySupplier[r.supplier_name] || 0;
+    const shrink = (r.warehouse_received_net_kg || 0) - (r.net_dispatch_weight_kg || 0);
+    const remaining = (r.warehouse_received_net_kg || 0) - sampleKg - procKg;
+    return [
+      idx + 1,
+      r.coffee_code || '',
+      r.supplier_name || '',
+      r.grn_code || '',
+      r.dispatch_no || '',
+      r.received_date ? format(new Date(r.received_date), 'd MMM yyyy') : '',
+      r.net_dispatch_weight_kg || 0,
+      r.warehouse_received_net_kg || 0,
+      shrink,
+      sampleKg,
+      procKg,
+      remaining,
+      r.bags_received || 0,
+      r.remark || '',
+    ];
+  });
+  const handleExportPDF = () => exportPDFReport('Warehouse Receipt Report', WRR_HEADERS, buildWRRRows(), true);
+  const handleExportExcel = () => exportXLSXReport('warehouse-receipt-report', 'Warehouse Receipt Report', WRR_HEADERS, buildWRRRows(), true);
 
   const COLS = [
     { label: '#', key: null },

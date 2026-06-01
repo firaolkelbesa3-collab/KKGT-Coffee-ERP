@@ -32,7 +32,7 @@ function generatePDF(record, receipt, payments, costs, totals) {
   let y = 18;
 
   // Header band
-  doc.setFillColor(18, 100, 51);
+  doc.setFillColor(46, 26, 18);
   doc.rect(0, 0, pageWidth, 14, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
@@ -43,7 +43,7 @@ function generatePDF(record, receipt, payments, costs, totals) {
   doc.text(`Generated ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - margin, 9, { align: 'right' });
 
   y = 22;
-  doc.setTextColor(18, 100, 51);
+  doc.setTextColor(111, 78, 55);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.text('Purchase Record Detail', margin, y);
@@ -78,7 +78,7 @@ function generatePDF(record, receipt, payments, costs, totals) {
   if (costs.length > 0) {
     y += 4;
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(18, 100, 51);
+    doc.setTextColor(111, 78, 55);
     doc.text('Additional Costs', margin, y);
     y += 6;
     doc.setTextColor(30, 30, 30);
@@ -93,7 +93,7 @@ function generatePDF(record, receipt, payments, costs, totals) {
   // Payments table
   y += 6;
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(18, 100, 51);
+  doc.setTextColor(111, 78, 55);
   doc.text('Payment History', margin, y);
   y += 6;
   doc.setTextColor(30, 30, 30);
@@ -102,7 +102,7 @@ function generatePDF(record, receipt, payments, costs, totals) {
   const cols = ['Date', 'Bank', 'Branch', 'CPV Ref', 'Type', 'Amount ETB'];
   const colW = [25, 24, 32, 30, 30, 30];
   let x = margin;
-  doc.setFillColor(18, 100, 51);
+  doc.setFillColor(46, 26, 18);
   doc.rect(margin, y - 4, pageWidth - margin * 2, 6, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');

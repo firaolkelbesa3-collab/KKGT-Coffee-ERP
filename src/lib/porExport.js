@@ -30,7 +30,7 @@ export function exportSinglePurchasePDF(purchase, payments, receipt) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('KKGT IMPORT & EXPORT — ETHIOPIA', M, 11);
+  doc.text('COFFEE ERP — ETHIOPIA', M, 11);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('Purchase Receipt', M, 19);
@@ -133,7 +133,7 @@ export function exportPORPDF({ filtered, summary, dateRange }) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
-    doc.text('KKGT IMPORT & EXPORT — ETHIOPIA', M, 10);
+    doc.text('COFFEE ERP — ETHIOPIA', M, 10);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.text('Purchase Orders Report — CONFIDENTIAL', M, 17);

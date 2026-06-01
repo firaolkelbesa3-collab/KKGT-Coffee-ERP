@@ -37,7 +37,7 @@ function generatePDF(record, receipt, payments, costs, totals) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(255, 255, 255);
-  doc.text('KKGT IMPORT & EXPORT', margin, 9);
+  doc.text('COFFEE ERP', margin, 9);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.text(`Generated ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - margin, 9, { align: 'right' });

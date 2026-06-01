@@ -65,6 +65,7 @@ const MOBILE_GROUPS = [
     items: [
       { path: '/master-data', label: 'Master Data', icon: Database },
       { path: '/data-import', label: 'Data Import', icon: Upload },
+      { path: '/data-audit', label: 'Data Audit', icon: ShieldCheck },
       { path: '/permissions', label: 'Permissions', icon: Lock },
       { path: '/notification-settings', label: 'Notifications', icon: Bell },
     ],

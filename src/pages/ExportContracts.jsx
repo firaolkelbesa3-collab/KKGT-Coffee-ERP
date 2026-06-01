@@ -218,7 +218,7 @@ function exportContractPDF(contract) {
   doc.rect(0, 28, W, 3, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14); doc.setFont('helvetica', 'bold');
-  doc.text('KKGT IMPORT & EXPORT — ETHIOPIA', M, 11);
+  doc.text('COFFEE ERP — ETHIOPIA', M, 11);
   doc.setFontSize(10); doc.setFont('helvetica', 'normal');
   doc.text('Export Contract', M, 19);
   doc.setFontSize(8);

@@ -20,7 +20,7 @@ function fmtDate(s) {
 
 function buildSheet(title, headers, rows) {
   const aoa = [
-    ['KKGT IMPORT & EXPORT'],
+    ['COFFEE ERP'],
     [title],
     [`Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`],
     [],

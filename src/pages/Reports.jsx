@@ -40,7 +40,7 @@ function exportXLSX(filename, reportTitle, headers, rows, totalsRow, dateRange) 
 
   // Title rows
   const titleRows = [
-    ['KKGT IMPORT & EXPORT'],
+    ['COFFEE ERP'],
     [reportTitle],
     [`Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}${dateRange ? `  |  Period: ${dateRange}` : ''}`],
     [], // blank
@@ -182,7 +182,7 @@ function exportPDF(title, headers, rows, totalsRow) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
     doc.setTextColor(100, 100, 100);
-    doc.text('KKGT Import & Export  ·  Confidential  ·  Internal use only', margin, pageHeight - 4);
+    doc.text('Coffee ERP  ·  Confidential  ·  Internal use only', margin, pageHeight - 4);
     doc.text(`Page ${pn}  ·  Season ${season}`, pageWidth - margin, pageHeight - 4, { align: 'right' });
   };
 

@@ -7,7 +7,7 @@ export function exportXLSX(filename, reportTitle, headers, rows, totalsRow, date
   const wb = XLSX.utils.book_new();
 
   const titleRows = [
-    ['KKGT IMPORT & EXPORT'],
+    ['COFFEE ERP'],
     [reportTitle],
     [`Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}${dateRange ? `  |  Period: ${dateRange}` : ''}`],
     [],
@@ -41,14 +41,14 @@ export function exportXLSX(filename, reportTitle, headers, rows, totalsRow, date
 
       if (r === headerRowIdx) {
         ws[ref].s = {
-          fill: { fgColor: { rgb: '126433' } },
+          fill: { fgColor: { rgb: '6F4E37' } },
           font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10 },
           alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
           border: { bottom: { style: 'thin', color: { rgb: 'FFFFFF' } } },
         };
       } else if (totalsRowIdx !== null && r === totalsRowIdx) {
         ws[ref].s = {
-          fill: { fgColor: { rgb: 'F06721' } },
+          fill: { fgColor: { rgb: 'C8873E' } },
           font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10 },
           alignment: { horizontal: c > 1 ? 'right' : 'left' },
         };
@@ -61,7 +61,7 @@ export function exportXLSX(filename, reportTitle, headers, rows, totalsRow, date
         if (typeof ws[ref].v === 'number') ws[ref].z = '#,##0.00';
       } else if (r < headerRowIdx) {
         ws[ref].s = {
-          font: r === 0 ? { bold: true, sz: 14, color: { rgb: '126433' } } : r === 1 ? { bold: true, sz: 11 } : { sz: 9, color: { rgb: '666666' } },
+          font: r === 0 ? { bold: true, sz: 14, color: { rgb: '6F4E37' } } : r === 1 ? { bold: true, sz: 11 } : { sz: 9, color: { rgb: '666666' } },
         };
       }
     }
@@ -80,18 +80,18 @@ export function exportPDF(title, headers, rows, totalsRow) {
   const genDate = format(new Date(), 'dd/MM/yyyy HH:mm');
   const season = new Date().getFullYear().toString();
 
-  doc.setFillColor(18, 100, 51);
+  doc.setFillColor(111, 78, 55);
   doc.rect(0, 0, pageWidth, 22, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(22);
   doc.setTextColor(255, 255, 255);
-  doc.text('KKGT', margin, 14);
+  doc.text('COFFEE ERP', margin, 14);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(180, 220, 190);
-  doc.text('IMPORT & EXPORT  ·  ETHIOPIA', margin + 26, 14);
+  doc.text('COFFEE SUPPLY CHAIN', margin + 26, 14);
 
-  doc.setFillColor(240, 103, 33);
+  doc.setFillColor(200, 135, 62);
   doc.rect(0, 22, pageWidth, 14, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -112,7 +112,7 @@ export function exportPDF(title, headers, rows, totalsRow) {
   const addFooter = (pn) => {
     doc.setFillColor(245, 245, 245);
     doc.rect(0, pageHeight - 10, pageWidth, 10, 'F');
-    doc.setDrawColor(18, 100, 51);
+    doc.setDrawColor(111, 78, 55);
     doc.setLineWidth(0.5);
     doc.line(0, pageHeight - 10, pageWidth, pageHeight - 10);
     doc.setDrawColor(220, 220, 220);
@@ -120,12 +120,12 @@ export function exportPDF(title, headers, rows, totalsRow) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
     doc.setTextColor(100, 100, 100);
-    doc.text('KKGT Import & Export  ·  Confidential  ·  Internal use only', margin, pageHeight - 4);
+    doc.text('Coffee ERP  ·  Confidential  ·  Internal use only', margin, pageHeight - 4);
     doc.text(`Page ${pn}  ·  Season ${season}`, pageWidth - margin, pageHeight - 4, { align: 'right' });
   };
 
   const drawTableHeader = () => {
-    doc.setFillColor(18, 100, 51);
+    doc.setFillColor(111, 78, 55);
     doc.rect(margin, y, pageWidth - margin * 2, rowH, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6);
@@ -153,7 +153,7 @@ export function exportPDF(title, headers, rows, totalsRow) {
     const isTotals = totalsRow && ri === allRows.length - 1;
 
     if (isTotals) {
-      doc.setFillColor(18, 100, 51);
+      doc.setFillColor(111, 78, 55);
       doc.rect(margin, y, pageWidth - margin * 2, rowH, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6.5);
@@ -178,7 +178,7 @@ export function exportPDF(title, headers, rows, totalsRow) {
       const x = isNumericCol ? margin + (i + 1) * colWidth - 2 : margin + i * colWidth + 1.5;
 
       if (!isTotals && (cellStr === 'Paid' || cellStr === 'Paid ✓')) {
-        doc.setTextColor(18, 100, 51); doc.setFont('helvetica', 'bold');
+        doc.setTextColor(111, 78, 55); doc.setFont('helvetica', 'bold');
       } else if (!isTotals && cellStr === 'Partial') {
         doc.setTextColor(180, 100, 0); doc.setFont('helvetica', 'bold');
       } else if (!isTotals && cellStr === 'Unpaid') {

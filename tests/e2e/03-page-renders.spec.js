@@ -27,6 +27,7 @@ const PAGES = [
   { path: '/notification-history', heading: /notification/i },
   { path: '/notification-settings', heading: /notification/i },
   { path: '/data-import', heading: /import/i },
+  { path: '/data-audit', heading: /audit/i },
 ];
 
 test.describe('Page render smoke test (admin)', () => {

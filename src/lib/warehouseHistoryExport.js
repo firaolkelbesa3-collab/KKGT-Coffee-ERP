@@ -16,7 +16,7 @@ export function exportHistoryPDF(history) {
   doc.rect(0, 22, W, 2, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-  doc.text('KKGT IMPORT & EXPORT — ETHIOPIA', M, 10);
+  doc.text('COFFEE ERP — ETHIOPIA', M, 10);
   doc.setFontSize(9); doc.setFont('helvetica', 'normal');
   doc.text('Warehouse Receipt Change History — CONFIDENTIAL', M, 17);
   doc.text(`Generated: ${format(new Date(), 'd MMM yyyy HH:mm')}`, W - M, 17, { align: 'right' });

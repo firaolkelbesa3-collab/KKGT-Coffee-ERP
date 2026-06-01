@@ -44,7 +44,7 @@ export default function WRRDetailPanel({ receipt, purchase, sampleKg, processing
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('KKGT IMPORT & EXPORT — ETHIOPIA', pageW / 2, 13, { align: 'center' });
+    doc.text('COFFEE ERP — ETHIOPIA', pageW / 2, 13, { align: 'center' });
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
     doc.text('Warehouse Receipt', pageW / 2, 21, { align: 'center' });

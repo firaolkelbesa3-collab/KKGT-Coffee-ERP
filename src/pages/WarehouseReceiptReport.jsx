@@ -211,7 +211,7 @@ export default function WarehouseReceiptReport() {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text('KKGT IMPORT & EXPORT — ETHIOPIA', pageW / 2, 18, { align: 'center' });
+    doc.text('COFFEE ERP — ETHIOPIA', pageW / 2, 18, { align: 'center' });
     doc.setFontSize(13);
     doc.text('Warehouse Receipt Report', pageW / 2, 28, { align: 'center' });
     doc.setFillColor(240, 103, 33);

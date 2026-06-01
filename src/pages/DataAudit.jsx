@@ -15,11 +15,13 @@ import {
 } from 'lucide-react';
 
 // Entities that can be reconciled against Excel, with their key + comparable fields.
+// Each entity defines `keys` (one or more columns that together identify a row)
+// and `fields` (values to compare). Entities without a single unique key use a
+// composite key (e.g. date + supplier + batch).
 const RECON_ENTITIES = {
   PurchaseRecord: {
     label: 'Purchase Records',
-    keyField: 'coffee_code',
-    keyAliases: ['coffee code', 'code'],
+    keys: [{ field: 'coffee_code', label: 'Coffee Code', aliases: ['coffee code', 'code'] }],
     fields: [
       { field: 'supplier_name', label: 'Supplier', numeric: false, aliases: ['supplier', 'supplier name'] },
       { field: 'net_dispatch_weight_kg', label: 'Dispatch KG', numeric: true, aliases: ['net kg', 'dispatch kg', 'net dispatch', 'dispatch weight'] },
@@ -29,22 +31,86 @@ const RECON_ENTITIES = {
       { field: 'balance_etb', label: 'Balance ETB', numeric: true, aliases: ['balance etb', 'balance'] },
     ],
   },
+  WarehouseReceipt: {
+    label: 'Warehouse Receipts',
+    keys: [{ field: 'coffee_code', label: 'Coffee Code', aliases: ['coffee code', 'code', 'grn'] }],
+    fields: [
+      { field: 'warehouse_received_net_kg', label: 'Received KG', numeric: true, aliases: ['received kg', 'net kg', 'warehouse received', 'received net kg'] },
+      { field: 'bags_received', label: 'Bags', numeric: true, aliases: ['bags', 'bags received'] },
+      { field: 'grn_code', label: 'GRN Code', numeric: false, aliases: ['grn', 'grn code'] },
+    ],
+  },
   Supplier: {
     label: 'Suppliers',
-    keyField: 'supplier_name',
-    keyAliases: ['supplier', 'supplier name', 'name'],
+    keys: [{ field: 'supplier_name', label: 'Supplier', aliases: ['supplier', 'supplier name', 'name'] }],
     fields: [
       { field: 'region', label: 'Region', numeric: false, aliases: ['region'] },
       { field: 'opening_stock_kg', label: 'Opening Stock KG', numeric: true, aliases: ['opening stock', 'opening stock kg', 'opening'] },
     ],
   },
-  WarehouseReceipt: {
-    label: 'Warehouse Receipts',
-    keyField: 'coffee_code',
-    keyAliases: ['coffee code', 'code'],
+  OutputReport: {
+    label: 'Output Reports',
+    keys: [
+      { field: 'supplier_name', label: 'Supplier', aliases: ['supplier', 'supplier name'] },
+      { field: 'end_date', label: 'End Date', aliases: ['end date', 'date', 'end'] },
+    ],
     fields: [
-      { field: 'warehouse_received_net_kg', label: 'Received KG', numeric: true, aliases: ['received kg', 'net kg', 'warehouse received', 'received net kg'] },
-      { field: 'bags_received', label: 'Bags', numeric: true, aliases: ['bags', 'bags received'] },
+      { field: 'coffee_type', label: 'Coffee Type', numeric: false, aliases: ['coffee type', 'type'] },
+      { field: 'total_kg_processed', label: 'Total KG Processed', numeric: true, aliases: ['total kg', 'processed', 'total kg processed'] },
+      { field: 'export_bags', label: 'Export Bags', numeric: true, aliases: ['export bags', 'export'] },
+      { field: 'reject_bags', label: 'Reject Bags', numeric: true, aliases: ['reject bags', 'reject'] },
+      { field: 'waste_kg', label: 'Waste KG', numeric: true, aliases: ['waste kg', 'waste'] },
+    ],
+  },
+  ProcessingLog: {
+    label: 'Processing Logs',
+    keys: [
+      { field: 'date', label: 'Date', aliases: ['date'] },
+      { field: 'supplier_name', label: 'Supplier', aliases: ['supplier', 'supplier name'] },
+      { field: 'batch_no', label: 'Batch No', aliases: ['batch', 'batch no', 'batch number'] },
+    ],
+    fields: [
+      { field: 'coffee_type', label: 'Coffee Type', numeric: false, aliases: ['coffee type', 'type'] },
+      { field: 'bags_sent', label: 'Bags Sent', numeric: true, aliases: ['bags sent', 'bags'] },
+      { field: 'kg_sent', label: 'KG Sent', numeric: true, aliases: ['kg sent', 'kg'] },
+      { field: 'actual_weighed_kg', label: 'Actual Weighed KG', numeric: true, aliases: ['actual weighed', 'actual kg', 'weighed'] },
+    ],
+  },
+  ExportContract: {
+    label: 'Export Contracts',
+    keys: [{ field: 'contract_no', label: 'Contract No', aliases: ['contract no', 'contract', 'contract number', 'pi'] }],
+    fields: [
+      { field: 'buyer_name', label: 'Buyer', numeric: false, aliases: ['buyer', 'buyer name'] },
+      { field: 'destination_country', label: 'Destination', numeric: false, aliases: ['destination', 'country'] },
+      { field: 'export_kg', label: 'Export KG', numeric: true, aliases: ['export kg', 'kg'] },
+      { field: 'price_per_kg_usd', label: 'Price/KG USD', numeric: true, aliases: ['price per kg', 'price', 'usd'] },
+      { field: 'total_export_value_usd', label: 'Total Value USD', numeric: true, aliases: ['total value', 'value usd', 'total export value'] },
+      { field: 'profit_etb', label: 'Profit ETB', numeric: true, aliases: ['profit', 'profit etb'] },
+    ],
+  },
+  SampleLog: {
+    label: 'Sample Logs',
+    keys: [
+      { field: 'sample_date', label: 'Sample Date', aliases: ['sample date', 'date'] },
+      { field: 'supplier_name', label: 'Supplier', aliases: ['supplier', 'supplier name'] },
+    ],
+    fields: [
+      { field: 'coffee_type', label: 'Coffee Type', numeric: false, aliases: ['coffee type', 'type'] },
+      { field: 'sample_kg', label: 'Sample KG', numeric: true, aliases: ['sample kg', 'kg'] },
+      { field: 'sample_type', label: 'Sample Type', numeric: false, aliases: ['sample type'] },
+    ],
+  },
+  BuyerInspection: {
+    label: 'Buyer Inspections',
+    keys: [
+      { field: 'inspection_date', label: 'Inspection Date', aliases: ['inspection date', 'date'] },
+      { field: 'buyer_name', label: 'Buyer', aliases: ['buyer', 'buyer name'] },
+    ],
+    fields: [
+      { field: 'coffee_type', label: 'Coffee Type', numeric: false, aliases: ['coffee type', 'type'] },
+      { field: 'kg_to_inspect', label: 'KG to Inspect', numeric: true, aliases: ['kg to inspect', 'kg'] },
+      { field: 'result', label: 'Result', numeric: false, aliases: ['result', 'status'] },
+      { field: 'kg_approved', label: 'KG Approved', numeric: true, aliases: ['kg approved', 'approved'] },
     ],
   },
 };
@@ -92,6 +158,7 @@ export default function DataAudit() {
   const { data: outputReports = [] } = q('output-reports', () => base44.entities.OutputReport.list());
   const { data: sampleLogs = [] } = q('sample-logs', () => base44.entities.SampleLog.list());
   const { data: exportContracts = [] } = q('export-contracts', () => base44.entities.ExportContract.list());
+  const { data: inspections = [] } = q('buyer-inspections', () => base44.entities.BuyerInspection.list());
 
   const [auditRun, setAuditRun] = useState(false);
   const issues = useMemo(() => {
@@ -119,13 +186,20 @@ export default function DataAudit() {
   const [excelRows, setExcelRows] = useState(null);
   const [excelHeaders, setExcelHeaders] = useState([]);
   const [fileName, setFileName] = useState('');
-  const [keyCol, setKeyCol] = useState('');
+  const [keyMap, setKeyMap] = useState({});      // keyField -> excelCol
   const [colMap, setColMap] = useState({});      // appField -> excelCol
   const [reconResult, setReconResult] = useState(null);
 
   const cfg = RECON_ENTITIES[reconEntity];
   const appRecords = {
-    PurchaseRecord: purchaseRecords, Supplier: suppliers, WarehouseReceipt: receipts,
+    PurchaseRecord: purchaseRecords,
+    Supplier: suppliers,
+    WarehouseReceipt: receipts,
+    OutputReport: outputReports,
+    ProcessingLog: processingLogs,
+    ExportContract: exportContracts,
+    SampleLog: sampleLogs,
+    BuyerInspection: inspections,
   }[reconEntity] || [];
 
   const handleFile = async (e) => {
@@ -158,20 +232,26 @@ export default function DataAudit() {
     setExcelHeaders(headers);
     setFileName(file.name);
     setReconResult(null);
-    // Auto-map key + fields by header name / label / aliases.
-    setKeyCol(guessColumn(headers, cfg.keyField, cfg.label, cfg.keyAliases) || headers[0] || '');
+    // Auto-map each key part + each field by header name / label / aliases.
+    const km = {};
+    cfg.keys.forEach(k => { km[k.field] = guessColumn(headers, k.field, k.label, k.aliases); });
+    setKeyMap(km);
     const m = {};
     cfg.fields.forEach(f => { m[f.field] = guessColumn(headers, f.field, f.label, f.aliases); });
     setColMap(m);
   };
 
+  const allKeysMapped = cfg.keys.every(k => keyMap[k.field]);
+
   const runRecon = () => {
+    const keyAppFields = cfg.keys.map(k => k.field);
+    const keyExcelCols = cfg.keys.map(k => keyMap[k.field]);
     const compareCols = cfg.fields
       .filter(f => colMap[f.field])
       .map(f => ({ excelCol: colMap[f.field], appField: f.field, numeric: f.numeric }));
     const result = reconcileWithExcel(excelRows, appRecords, {
-      keyExcelCol: keyCol,
-      keyAppField: cfg.keyField,
+      keyExcelCols,
+      keyAppFields,
       compareCols,
       numericTol: 1,
     });
@@ -312,7 +392,20 @@ export default function DataAudit() {
             <Card>
               <CardHeader><CardTitle className="text-base">2. Map columns</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <MapRow label={`Match key (${cfg.keyField})`} value={keyCol} onChange={setKeyCol} headers={excelHeaders} />
+                <p className="text-xs text-muted-foreground">
+                  {cfg.keys.length > 1
+                    ? `Rows are matched on ${cfg.keys.map(k => k.label).join(' + ')} together.`
+                    : `Rows are matched on ${cfg.keys[0].label}.`}
+                </p>
+                {cfg.keys.map(k => (
+                  <MapRow
+                    key={k.field}
+                    label={`Match key — ${k.label}`}
+                    value={keyMap[k.field] || ''}
+                    onChange={(v) => setKeyMap(m => ({ ...m, [k.field]: v }))}
+                    headers={excelHeaders}
+                  />
+                ))}
                 <div className="h-px bg-border" />
                 {cfg.fields.map(f => (
                   <MapRow
@@ -324,9 +417,12 @@ export default function DataAudit() {
                     optional
                   />
                 ))}
-                <Button onClick={runRecon} disabled={!keyCol} className="press">
+                <Button onClick={runRecon} disabled={!allKeysMapped} className="press">
                   <FileSpreadsheet className="w-4 h-4 mr-2" /> Compare with app
                 </Button>
+                {!allKeysMapped && (
+                  <p className="text-xs text-amber-700">Map all match-key columns to enable comparison.</p>
+                )}
               </CardContent>
             </Card>
           )}

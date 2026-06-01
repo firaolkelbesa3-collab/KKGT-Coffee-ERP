@@ -197,25 +197,32 @@ export function summarize(issues) {
  *
  * @param {Array<object>} excelRows  — parsed Excel rows (header→value objects)
  * @param {Array<object>} appRecords — app records for the chosen entity
+ * Supports composite keys (match on several columns) for entities without a
+ * single unique field (Output Reports, Processing, etc.).
+ *
  * @param {object} opts
- *   - keyExcelCol:  Excel header used as the match key
- *   - keyAppField:  app field used as the match key
+ *   - keyExcelCols: Excel headers forming the match key (array)
+ *   - keyAppFields: app fields forming the match key (array, same order)
  *   - compareCols:  [{ excelCol, appField, numeric }] value columns to compare
  *   - numericTol:   tolerance for numeric compares (default 1)
  * @returns {{ onlyInExcel, onlyInApp, mismatches, matched }}
  */
 export function reconcileWithExcel(excelRows, appRecords, opts) {
-  const { keyExcelCol, keyAppField, compareCols = [], numericTol = 1 } = opts;
+  const { keyExcelCols = [], keyAppFields = [], compareCols = [], numericTol = 1 } = opts;
+
+  // Build a composite key from several values (dates normalized to YYYY-MM-DD-ish).
+  const compositeKey = (getter, cols) =>
+    cols.map(c => normKeyPart(getter(c))).join('|');
 
   const appByKey = new Map();
   appRecords.forEach(r => {
-    const k = norm(r[keyAppField]);
-    if (k) appByKey.set(k, r);
+    const k = compositeKey(f => r[f], keyAppFields);
+    if (k.replace(/\|/g, '')) appByKey.set(k, r);
   });
   const excelByKey = new Map();
   excelRows.forEach(row => {
-    const k = norm(row[keyExcelCol]);
-    if (k) excelByKey.set(k, row);
+    const k = compositeKey(c => row[c], keyExcelCols);
+    if (k.replace(/\|/g, '')) excelByKey.set(k, row);
   });
 
   const onlyInExcel = [];
@@ -223,10 +230,12 @@ export function reconcileWithExcel(excelRows, appRecords, opts) {
   const mismatches = [];
   let matched = 0;
 
+  const keyLabel = (getter, cols) => cols.map(c => getter(c) ?? '').filter(Boolean).join(' · ');
+
   for (const [k, row] of excelByKey) {
     const appRec = appByKey.get(k);
     if (!appRec) {
-      onlyInExcel.push({ key: row[keyExcelCol], row });
+      onlyInExcel.push({ key: keyLabel(c => row[c], keyExcelCols), row });
       continue;
     }
     matched++;
@@ -234,26 +243,35 @@ export function reconcileWithExcel(excelRows, appRecords, opts) {
     for (const { excelCol, appField, numeric } of compareCols) {
       const ev = row[excelCol];
       const av = appRec[appField];
-      let differs;
-      if (numeric) {
-        differs = Math.abs(num(ev) - num(av)) > numericTol;
-      } else {
-        differs = norm(ev) !== norm(av);
-      }
-      if (differs) {
-        fieldDiffs.push({ field: appField, excel: ev ?? '', app: av ?? '' });
-      }
+      const differs = numeric
+        ? Math.abs(num(ev) - num(av)) > numericTol
+        : norm(ev) !== norm(av);
+      if (differs) fieldDiffs.push({ field: appField, excel: ev ?? '', app: av ?? '' });
     }
     if (fieldDiffs.length) {
-      mismatches.push({ key: row[keyExcelCol], diffs: fieldDiffs });
+      mismatches.push({ key: keyLabel(c => row[c], keyExcelCols), diffs: fieldDiffs });
     }
   }
 
   for (const [k, rec] of appByKey) {
     if (!excelByKey.has(k)) {
-      onlyInApp.push({ key: rec[keyAppField], record: rec });
+      onlyInApp.push({ key: keyLabel(f => rec[f], keyAppFields), record: rec });
     }
   }
 
   return { onlyInExcel, onlyInApp, mismatches, matched };
+}
+
+// Normalize a key part: dates → YYYY-MM-DD so '23/02/2026' and a Date match.
+function normKeyPart(v) {
+  if (v == null) return '';
+  if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0, 10);
+  const s = String(v).trim();
+  // dd/mm/yyyy or d/m/yyyy
+  const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  // yyyy-mm-dd (already) or ISO datetime
+  const iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  return s.toLowerCase();
 }

@@ -116,7 +116,13 @@ export default function DataAudit() {
     const wb = XLSX.read(buf, { type: 'array', cellDates: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    const headers = rows.length ? Object.keys(rows[0]) : [];
+    // Collect headers across all rows and drop empty/whitespace-only ones —
+    // a blank Excel header would create a <SelectItem value=""> which crashes Radix.
+    const headerSet = new Set();
+    rows.forEach(r => Object.keys(r).forEach(k => {
+      if (k != null && String(k).trim() !== '') headerSet.add(k);
+    }));
+    const headers = [...headerSet];
     setExcelRows(rows);
     setExcelHeaders(headers);
     setFileName(file.name);
@@ -362,7 +368,9 @@ function MapRow({ label, value, onChange, headers, optional }) {
         <SelectTrigger className="max-w-xs"><SelectValue placeholder="— select column —" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="__none__">{optional ? '(skip)' : '— select —'}</SelectItem>
-          {headers.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+          {headers
+            .filter(h => h != null && String(h).trim() !== '')
+            .map(h => <SelectItem key={h} value={String(h)}>{h}</SelectItem>)}
         </SelectContent>
       </Select>
     </div>

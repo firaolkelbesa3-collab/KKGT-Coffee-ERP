@@ -851,6 +851,30 @@ git push
 
 ---
 
+## Offline support (PWA + sync queue) — how it works & landmines
+
+The app is a PWA with three offline layers:
+
+1. **App shell** — `vite-plugin-pwa` (Workbox) precaches the build. App opens with no network.
+2. **Offline reads** — React Query cache persisted to IndexedDB (`@tanstack/react-query-persist-client` + `idb-keyval`). Every `useQuery` serves last-seen data offline. `networkMode: 'offlineFirst'`, `gcTime: 24h`.
+3. **Offline writes** — `src/lib/offlineQueue.js` (IndexedDB queue) + offline-aware `create`/`update` in `supabaseClient.js`. Offline writes return an optimistic record (`_pendingSync: true`, `temp_` id), inject into the list cache, and replay via `flushQueue()` on reconnect (auto-triggered by `usePendingSync`).
+
+### 🚨 Offline landmines (all handled, know them anyway)
+
+- **Role lost offline** → admins bounced to Pending Approval. Cause: AuthContext fetched the role via an uncached `supabase.from('profiles')` call. Fix: cache `{id, role}` in localStorage on success, fall back to it on offline failure. (`PROFILE_CACHE_KEY` in AuthContext.) Requires one online load first.
+- **Server-side triggers don't run offline.** `grand_total_etb`, `balance_etb`, recalc-from-receipt run in Postgres. Offline drafts show *provisional* client-computed totals; the trigger recomputes authoritatively on sync. Label drafts `_pendingSync`.
+- **`coffee_code` collisions.** Codes derive from `records.length + 1`. The optimistic record is injected into the cache so the next offline code increments correctly *on one device*. Two devices offline can still collide → on flush the `unique` constraint rejects the loser; `flushQueue` treats that as a *permanent* error and **drops** the item (doesn't block the queue). Real fix for heavy multi-device offline: server-assigned codes / UUID drafts (Phase 3).
+- **Telegram can't fire offline.** `flushQueue` re-fires `notifyNewPurchase` after a purchase create syncs. Other entities' notifications are not re-fired — extend in `flushQueue` if needed.
+- **Queue-blocking.** `flushQueue` stops on *network* errors (transient, retries later) but **drops** items on permanent errors (constraint/RLS) so one bad write can't wedge the queue forever.
+- **Precache size.** The main bundle >2 MiB needs `workbox.maximumFileSizeToCacheInBytes` raised, else it won't precache. (Code-split later to shrink.)
+- **Service worker caching the old app.** After deploying a fix, users may keep the old bundle until the SW updates. `registerType: 'autoUpdate'` handles most cases; for stubborn cases, uninstall/reinstall the PWA.
+
+### Not yet built (Phase 3)
+
+- Editing/deleting an *unsynced* draft (currently drafts are create-then-sync only)
+- True multi-device conflict resolution (consider PowerSync rather than hand-rolling)
+- Offline writes for every entity's list optimistic-injection (only the entities in `LIST_QUERY_KEY` get optimistic rows; others still queue + sync but won't show until refetch)
+
 ## Final wisdom
 
 1. **Read JSONCs first.** Every schema bug we hit traces back to skipping this step.

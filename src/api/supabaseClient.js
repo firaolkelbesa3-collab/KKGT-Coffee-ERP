@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { enqueue, getQueue, getQueueCount, removeFromQueue } from '@/lib/offlineQueue'
+import { queryClientInstance } from '@/lib/query-client'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -157,6 +159,127 @@ async function withUnknownColumnRetry(tableName, payload, runner) {
   return { data: null, error: new Error('too many unknown columns; aborting') }
 }
 
+// ---------------------------------------------------------------------------
+// Offline write support (Phase 2.5)
+//
+// When offline (or a write fails with a network error), the create/update is
+// pushed to the IndexedDB sync queue and an OPTIMISTIC record is returned +
+// injected into the relevant React Query list cache so the UI updates instantly.
+// flushQueue() replays the queue when connectivity returns.
+// ---------------------------------------------------------------------------
+
+// Maps a table to the React Query list key so we can inject optimistic rows.
+const LIST_QUERY_KEY = {
+  purchase_records:        ['purchase-records'],
+  warehouse_receipts:      ['warehouse-receipts'],
+  processing_logs:         ['processing-logs'],
+  sample_logs:             ['sample-logs'],
+  output_reports:          ['output-reports'],
+  export_contracts:        ['export-contracts'],
+  suppliers:               ['suppliers'],
+  buyer_inspections:       ['buyer-inspections'],
+  bag_receipts:            ['bag-receipts'],
+  material_register_entries: ['material-register-entries'],
+}
+
+function isOffline() {
+  return typeof navigator !== 'undefined' && navigator.onLine === false
+}
+
+function isNetworkError(err) {
+  if (!err) return false
+  const msg = (err.message || '').toLowerCase()
+  return err.name === 'TypeError'
+    || msg.includes('failed to fetch')
+    || msg.includes('network')
+    || msg.includes('fetch')
+    || err.code === 'ECONNABORTED'
+}
+
+function injectOptimistic(tableName, record) {
+  const key = LIST_QUERY_KEY[tableName]
+  if (!key) return
+  queryClientInstance.setQueryData(key, (old) =>
+    Array.isArray(old) ? [record, ...old] : old
+  )
+}
+
+function removeOptimistic(tableName, tempId) {
+  const key = LIST_QUERY_KEY[tableName]
+  if (!key) return
+  queryClientInstance.setQueryData(key, (old) =>
+    Array.isArray(old) ? old.filter(r => r.id !== tempId) : old
+  )
+}
+
+async function enqueueOptimisticCreate(tableName, payload) {
+  const tempId = `temp_${crypto?.randomUUID?.() || Date.now()}`
+  const nowIso = new Date().toISOString()
+  const optimistic = addVirtualFields({
+    ...payload,
+    id: tempId,
+    created_at: nowIso,
+    updated_at: nowIso,
+    _pendingSync: true,
+  })
+  await enqueue({ entity: tableName, type: 'create', payload, tempId })
+  injectOptimistic(tableName, optimistic)
+  return optimistic
+}
+
+async function enqueueOptimisticUpdate(tableName, recordId, payload) {
+  await enqueue({ entity: tableName, type: 'update', payload, recordId, tempId: recordId })
+  return addVirtualFields({ ...payload, id: recordId, _pendingSync: true })
+}
+
+/**
+ * Replay queued offline writes against Supabase. Safe to call repeatedly.
+ * - Network errors stop the run (still offline) — items stay queued.
+ * - Permanent errors (constraint/RLS) drop the item so it can't block forever.
+ */
+export async function flushQueue() {
+  if (isOffline()) return { flushed: 0, pending: await getQueueCount() }
+  const queue = await getQueue()
+  let flushed = 0
+  for (const item of queue) {
+    try {
+      let synced = null
+      if (item.type === 'create') {
+        const { data, error } = await withUnknownColumnRetry(item.entity, item.payload, p =>
+          supabase.from(item.entity).insert(p).select().single()
+        )
+        if (error) throw error
+        synced = addVirtualFields(data)
+        removeOptimistic(item.entity, item.tempId)
+      } else if (item.type === 'update') {
+        const { data, error } = await withUnknownColumnRetry(item.entity, item.payload, p =>
+          supabase.from(item.entity).update(p).eq('id', item.recordId).select().single()
+        )
+        if (error) throw error
+        synced = addVirtualFields(data)
+      }
+      await removeFromQueue(item.id)
+      flushed++
+
+      // Fire deferred side effects that couldn't run offline.
+      if (item.type === 'create' && item.entity === 'purchase_records' && synced) {
+        try {
+          const { notifyNewPurchase } = await import('@/lib/notificationService')
+          notifyNewPurchase(synced).catch(() => {})
+        } catch { /* ignore */ }
+      }
+    } catch (err) {
+      if (isNetworkError(err)) break // still offline — retry on next flush
+      // Permanent failure (unique violation, RLS, etc.) — drop so it can't block the queue.
+      console.error(`[flushQueue] dropping un-syncable ${item.entity} item:`, err?.message)
+      await removeFromQueue(item.id)
+      removeOptimistic(item.entity, item.tempId)
+    }
+  }
+  if (flushed > 0) queryClientInstance.invalidateQueries()
+  return { flushed, pending: await getQueueCount() }
+}
+
 function makeEntity(tableName) {
   return {
     list: async (sort, limit) => {
@@ -195,28 +318,43 @@ function makeEntity(tableName) {
     },
 
     create: async (record) => {
-      const { data: { user } } = await supabase.auth.getUser()
+      let user = null
+      try { user = (await supabase.auth.getUser()).data.user } catch { /* offline — getUser may fail */ }
       const payload = cleanPayload({ ...record, created_by: user?.id }, tableName)
-      const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
-        supabase.from(tableName).insert(p).select().single()
-      )
-      if (error) {
-        console.error(`[db.${tableName}.create]`, error.message)
-        throw error
+
+      // Offline → queue + optimistic record.
+      if (isOffline()) return enqueueOptimisticCreate(tableName, payload)
+
+      try {
+        const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
+          supabase.from(tableName).insert(p).select().single()
+        )
+        if (error) throw error
+        return addVirtualFields(data)
+      } catch (err) {
+        // Network failure mid-flight → fall back to the offline queue.
+        if (isNetworkError(err)) return enqueueOptimisticCreate(tableName, payload)
+        console.error(`[db.${tableName}.create]`, err.message)
+        throw err
       }
-      return addVirtualFields(data)
     },
 
     update: async (id, updates) => {
       const payload = cleanPayload({ ...updates }, tableName)
-      const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
-        supabase.from(tableName).update(p).eq('id', id).select().single()
-      )
-      if (error) {
-        console.error(`[db.${tableName}.update]`, error.message)
-        throw error
+
+      if (isOffline()) return enqueueOptimisticUpdate(tableName, id, payload)
+
+      try {
+        const { data, error } = await withUnknownColumnRetry(tableName, payload, p =>
+          supabase.from(tableName).update(p).eq('id', id).select().single()
+        )
+        if (error) throw error
+        return addVirtualFields(data)
+      } catch (err) {
+        if (isNetworkError(err)) return enqueueOptimisticUpdate(tableName, id, payload)
+        console.error(`[db.${tableName}.update]`, err.message)
+        throw err
       }
-      return addVirtualFields(data)
     },
 
     delete: async (id) => {

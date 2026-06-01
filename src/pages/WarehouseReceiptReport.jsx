@@ -313,7 +313,7 @@ export default function WarehouseReceiptReport() {
     doc.text('CONFIDENTIAL', pageW / 2, 150, { align: 'center', angle: 45 });
 
     const dateStr = format(new Date(), 'dd-MM-yyyy');
-    doc.save(`KKGT-Warehouse-Receipt-Report-${dateStr}.pdf`);
+    doc.save(`CoffeeERP-Warehouse-Receipt-Report-${dateStr}.pdf`);
   };
 
   // --- EXPORT EXCEL ---
@@ -371,7 +371,7 @@ export default function WarehouseReceiptReport() {
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allRows), 'Warehouse Receipts');
     const dateStr = format(new Date(), 'dd-MM-yyyy');
-    XLSX.writeFile(wb, `KKGT-Warehouse-Report-${dateStr}.xlsx`);
+    XLSX.writeFile(wb, `CoffeeERP-Warehouse-Report-${dateStr}.xlsx`);
   };
 
   const COLS = [

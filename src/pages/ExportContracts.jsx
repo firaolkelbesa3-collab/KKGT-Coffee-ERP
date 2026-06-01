@@ -262,8 +262,8 @@ function exportContractPDF(contract) {
   if (contract.remark) row('Remark:', contract.remark);
 
   doc.setTextColor(150, 150, 150); doc.setFontSize(7);
-  doc.text(`Generated: ${new Date().toLocaleString()} — KKGT CONFIDENTIAL`, W / 2, 285, { align: 'center' });
-  doc.save(`KKGT-Contract-${contract.contract_no?.replace(/\//g, '-') || contract.id}.pdf`);
+  doc.text(`Generated: ${new Date().toLocaleString()} — Coffee ERP · CONFIDENTIAL`, W / 2, 285, { align: 'center' });
+  doc.save(`CoffeeERP-Contract-${contract.contract_no?.replace(/\//g, '-') || contract.id}.pdf`);
 }
 
 // ─── Contract Detail View ─────────────────────────────────────────────────────

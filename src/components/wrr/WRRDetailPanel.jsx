@@ -132,7 +132,7 @@ export default function WRRDetailPanel({ receipt, purchase, sampleKg, processing
     doc.text(`Generated: ${format(new Date(), 'd MMM yyyy HH:mm')}`, lx, 285);
     doc.text('Page 1 of 1', pageW - lx, 285, { align: 'right' });
 
-    doc.save(`KKGT-Receipt-${receipt.coffee_code || receipt.id}.pdf`);
+    doc.save(`CoffeeERP-Receipt-${receipt.coffee_code || receipt.id}.pdf`);
   };
 
   return (

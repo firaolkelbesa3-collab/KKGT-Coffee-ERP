@@ -109,7 +109,7 @@ export default function NotificationHistory() {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     ws['!cols'] = headers.map(() => ({ wch: 30 }));
     XLSX.utils.book_append_sheet(wb, ws, 'Notifications');
-    XLSX.writeFile(wb, `KKGT_Notifications_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+    XLSX.writeFile(wb, `CoffeeERP_Notifications_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
   const exportPDF = () => {
@@ -120,7 +120,7 @@ export default function NotificationHistory() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
-    doc.text('KKGT — Notification History', 12, 12);
+    doc.text('Coffee ERP — Notification History', 12, 12);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.text(`Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pw - 12, 12, { align: 'right' });
@@ -150,7 +150,7 @@ export default function NotificationHistory() {
       cells.forEach((c, i) => doc.text(String(c), 13 + i * colW, y + 4.5));
       y += 6;
     });
-    doc.save(`KKGT_Notifications_${format(new Date(), 'yyyyMMdd')}.pdf`);
+    doc.save(`CoffeeERP_Notifications_${format(new Date(), 'yyyyMMdd')}.pdf`);
   };
 
   return (

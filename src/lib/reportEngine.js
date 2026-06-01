@@ -25,6 +25,27 @@ const ROW_ALT = '#F6F0E9';     // cream stripe
 const ROW_ALT_RGB = [246, 240, 233];
 
 // Decide which columns are numeric (right-align + number format) by sampling rows.
+// A value is numeric only if it's a clean number — NOT a code like "B-023"
+// (letters present) and not a date. Accepts thousands separators / % / currency.
+function isNumericValue(v) {
+  if (typeof v === 'number') return Number.isFinite(v);
+  if (v == null) return false;
+  const s = String(v).trim();
+  if (!s) return false;
+  if (/[a-z]/i.test(s)) return false;       // has letters → it's a code/label, not a number
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return false; // ISO date
+  if (/^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/.test(s)) return false; // dd/mm/yyyy date
+  const cleaned = s.replace(/[^0-9.\-]/g, '');
+  return cleaned !== '' && cleaned !== '-' && Number.isFinite(Number(cleaned));
+}
+
+function toNumber(v) {
+  if (typeof v === 'number') return v;
+  if (!isNumericValue(v)) return null;
+  const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
 function detectNumericCols(headers, rows) {
   return headers.map((_, c) => {
     let nums = 0, total = 0;
@@ -32,18 +53,48 @@ function detectNumericCols(headers, rows) {
       const v = r[c];
       if (v === '' || v == null) continue;
       total++;
-      const cleaned = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.\-]/g, ''));
-      if (Number.isFinite(cleaned) && String(v).match(/[0-9]/)) nums++;
+      if (isNumericValue(v)) nums++;
     }
     return total > 0 && nums / total >= 0.7;
   });
 }
 
-function toNumber(v) {
-  if (typeof v === 'number') return v;
-  const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
-  return Number.isFinite(n) ? n : null;
+// Among the numeric values in a column, are they ALL whole numbers? (→ no .00)
+function detectIntegerCols(headers, rows, numericCols) {
+  return headers.map((_, c) => {
+    if (!numericCols[c]) return false;
+    for (const r of rows) {
+      const n = toNumber(r[c]);
+      if (n != null && !Number.isInteger(n)) return false;
+    }
+    return true;
+  });
 }
+
+// Index/serial columns (#, No, S/N) — numeric but must NOT be summed in totals.
+function isIndexHeader(h) {
+  return /^(#|no\.?|s\/?n|sr\.?(\s*no)?|序)$/i.test(String(h).trim());
+}
+
+// Build a totals row that SUMs every numeric, non-index column.
+// Returns { values: number|null[], label } where label cell holds "TOTAL".
+function computeAutoTotals(headers, rows, numericCols) {
+  const sums = headers.map((h, c) => {
+    if (!numericCols[c] || isIndexHeader(h)) return null;
+    let s = 0, any = false;
+    for (const r of rows) { const n = toNumber(r[c]); if (n != null) { s += n; any = true; } }
+    return any ? s : null;
+  });
+  // First column that isn't a summed number gets the "TOTAL" label.
+  let labelIdx = sums.findIndex((v, c) => v == null && !numericCols[c]);
+  if (labelIdx === -1) labelIdx = 0;
+  return { sums, labelIdx };
+}
+
+const fmtNum = (n, integer) =>
+  n == null ? '' : Number(n).toLocaleString('en-US', integer
+    ? { maximumFractionDigits: 0 }
+    : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -59,11 +110,36 @@ function triggerDownload(blob, filename) {
 // ───────────────────────────────────────────────────────────────────────────
 // PDF
 // ───────────────────────────────────────────────────────────────────────────
-export function exportReportPDF({ title, subtitle, headers, rows, totals, filename = 'report' }) {
+export function exportReportPDF({ title, subtitle, headers, rows, totals, autoTotals, filename = 'report' }) {
   const doc = new jsPDF({ orientation: headers.length > 6 ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const numericCols = detectNumericCols(headers, rows);
+  const integerCols = detectIntegerCols(headers, rows, numericCols);
   const generated = format(new Date(), 'dd MMM yyyy, HH:mm');
+
+  // Format the displayed body: numeric cells get thousands separators (and no
+  // .00 for integer columns); everything else is shown as-is (codes intact).
+  const bodyDisplay = rows.map(r => r.map((c, ci) => {
+    if (c == null || c === '') return '';
+    if (numericCols[ci]) { const n = toNumber(c); return n == null ? String(c) : fmtNum(n, integerCols[ci]); }
+    return String(c);
+  }));
+
+  // Auto-compute a totals row across all numeric, non-index columns.
+  let footRow;
+  if (autoTotals) {
+    const { sums, labelIdx } = computeAutoTotals(headers, rows, numericCols);
+    footRow = headers.map((_, ci) => {
+      if (ci === labelIdx) return 'TOTAL';
+      return sums[ci] == null ? '' : fmtNum(sums[ci], integerCols[ci]);
+    });
+  } else if (totals) {
+    footRow = totals.map((c, ci) => {
+      if (c == null || c === '') return '';
+      if (numericCols[ci]) { const n = toNumber(c); return n == null ? String(c) : fmtNum(n, integerCols[ci]); }
+      return String(c);
+    });
+  }
 
   const drawHeader = () => {
     // Espresso band
@@ -92,8 +168,8 @@ export function exportReportPDF({ title, subtitle, headers, rows, totals, filena
 
   autoTable(doc, {
     head: [headers],
-    body: rows.map(r => r.map(c => (c == null ? '' : c))),
-    foot: totals ? [totals.map(c => (c == null ? '' : c))] : undefined,
+    body: bodyDisplay,
+    foot: footRow ? [footRow] : undefined,
     startY: 78,
     margin: { top: 78, left: 28, right: 28, bottom: 36 },
     styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', valign: 'middle' },
@@ -119,7 +195,7 @@ export function exportReportPDF({ title, subtitle, headers, rows, totals, filena
 // ───────────────────────────────────────────────────────────────────────────
 // Excel
 // ───────────────────────────────────────────────────────────────────────────
-export async function exportReportXLSX({ title, subtitle, headers, rows, totals, filename = 'report' }) {
+export async function exportReportXLSX({ title, subtitle, headers, rows, totals, autoTotals, filename = 'report' }) {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Coffee ERP';
   wb.created = new Date();
@@ -130,6 +206,10 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
 
   const nCols = headers.length;
   const numericCols = detectNumericCols(headers, rows);
+  const integerCols = detectIntegerCols(headers, rows, numericCols);
+  const numFmtFor = (ci) => (integerCols[ci] ? '#,##0' : '#,##0.00');
+  const firstDataRow = 5;
+  const lastDataRow = 4 + rows.length;
 
   // Embed logo (top-left).
   try {
@@ -181,11 +261,11 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
       const raw = r[ci];
       if (numericCols[ci]) {
         const n = toNumber(raw);
-        cell.value = n == null ? (raw ?? '') : n;
-        if (n != null) cell.numFmt = '#,##0.00';
+        cell.value = n == null ? (raw ?? '') : n;   // real number → formulas can sum it
+        if (n != null) cell.numFmt = numFmtFor(ci);
         cell.alignment = { horizontal: 'right' };
       } else {
-        cell.value = raw ?? '';
+        cell.value = raw ?? '';                      // codes like "B-023" stay text
       }
       if (ri % 2 === 1) {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF6F0E9' } };
@@ -193,18 +273,20 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
     });
   });
 
-  // Totals row.
-  if (totals) {
+  // Totals row — auto-sum every numeric (non-index) column with a real
+  // =SUM() formula, so the spreadsheet recalculates if values are edited.
+  if ((autoTotals || totals) && rows.length > 0) {
+    const { sums, labelIdx } = computeAutoTotals(headers, rows, numericCols);
     const tr = ws.getRow(5 + rows.length);
-    totals.forEach((t, ci) => {
+    headers.forEach((_, ci) => {
       const cell = tr.getCell(ci + 1);
-      if (numericCols[ci]) {
-        const n = toNumber(t);
-        cell.value = n == null ? (t ?? '') : n;
-        if (n != null) cell.numFmt = '#,##0.00';
+      const colLetter = ws.getColumn(ci + 1).letter;
+      if (sums[ci] != null) {
+        cell.value = { formula: `SUM(${colLetter}${firstDataRow}:${colLetter}${lastDataRow})`, result: sums[ci] };
+        cell.numFmt = numFmtFor(ci);
         cell.alignment = { horizontal: 'right' };
-      } else {
-        cell.value = t ?? '';
+      } else if (ci === labelIdx) {
+        cell.value = 'TOTAL';
       }
       cell.font = { bold: true, color: { argb: 'FF2E1A12' } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC8873E' } };

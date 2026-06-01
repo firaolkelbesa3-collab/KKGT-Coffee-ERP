@@ -111,5 +111,5 @@ export function exportUserReportExcel({ filteredStats, purchases, receipts, proc
     [`Generated: ${format(new Date(), 'MMM d, yyyy HH:mm')}`],
   ]), 'Info');
 
-  XLSX.writeFile(wb, `KKGT_User_Activity_${dateRange.from}_${dateRange.to}.xlsx`);
+  XLSX.writeFile(wb, `CoffeeERP_User_Activity_${dateRange.from}_${dateRange.to}.xlsx`);
 }

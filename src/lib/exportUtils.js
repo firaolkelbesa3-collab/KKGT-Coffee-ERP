@@ -13,6 +13,8 @@ function slug(s) {
 }
 
 // exportXLSX(filename, reportTitle, headers, rows, totalsRow, dateRange)
+// If a totalsRow is passed, the report wants totals → we auto-sum EVERY numeric
+// column (with live =SUM formulas), not just whatever the caller filled in.
 export function exportXLSX(filename, reportTitle, headers, rows, totalsRow, dateRange) {
   // Fire-and-forget (engine is async); the download still triggers normally.
   exportReportXLSX({
@@ -20,7 +22,7 @@ export function exportXLSX(filename, reportTitle, headers, rows, totalsRow, date
     subtitle: dateRange,
     headers,
     rows,
-    totals: totalsRow,
+    autoTotals: !!totalsRow,
     filename: slug(filename || reportTitle),
   });
 }
@@ -31,7 +33,7 @@ export function exportPDF(title, headers, rows, totalsRow) {
     title,
     headers,
     rows,
-    totals: totalsRow,
+    autoTotals: !!totalsRow,
     filename: slug(title),
   });
 }

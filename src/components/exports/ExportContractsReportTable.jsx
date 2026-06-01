@@ -126,7 +126,7 @@ export default function ExportContractsReportTable({ contracts = [], isLoading }
     doc.rect(0, 0, W, 18, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-    doc.text('KKGT — Export Contracts Report', M, 12);
+    doc.text('Coffee ERP — Export Contracts Report', M, 12);
     doc.setFontSize(7); doc.setFont('helvetica', 'normal');
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, W - M, 12, { align: 'right' });
 
@@ -184,7 +184,7 @@ export default function ExportContractsReportTable({ contracts = [], isLoading }
       x += colWidths[i];
     });
 
-    doc.save(`KKGT-Export-Contracts-Report-${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(`CoffeeERP-Export-Contracts-Report-${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
   function exportExcel() {
@@ -213,7 +213,7 @@ export default function ExportContractsReportTable({ contracts = [], isLoading }
     ws['!cols'] = COLS.map(c => ({ wch: Math.round(c.width / 7) }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Export Contracts');
-    XLSX.writeFile(wb, `KKGT-Export-Contracts-Report-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `CoffeeERP-Export-Contracts-Report-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   if (isLoading) {

@@ -165,7 +165,7 @@ export default function DownloadBackupButton() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `KKGT-Backup-${format(new Date(), 'yyyy-MM-dd')}.zip`;
+      a.download = `CoffeeERP-Backup-${format(new Date(), 'yyyy-MM-dd')}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

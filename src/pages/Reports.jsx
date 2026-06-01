@@ -134,7 +134,7 @@ function exportPDF(title, headers, rows, totalsRow) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(22);
   doc.setTextColor(255, 255, 255);
-  doc.text('KKGT', margin, 14);
+  doc.text('Coffee ERP', margin, 14);
 
   // Subtext
   doc.setFont('helvetica', 'normal');

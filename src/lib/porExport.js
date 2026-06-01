@@ -115,9 +115,9 @@ export function exportSinglePurchasePDF(purchase, payments, receipt) {
   // Footer
   doc.setTextColor(150, 150, 150);
   doc.setFontSize(7);
-  doc.text(`Generated: ${format(new Date(), 'd MMM yyyy HH:mm')} — KKGT CONFIDENTIAL`, W / 2, 285, { align: 'center' });
+  doc.text(`Generated: ${format(new Date(), 'd MMM yyyy HH:mm')} — Coffee ERP · CONFIDENTIAL`, W / 2, 285, { align: 'center' });
 
-  doc.save(`KKGT-PO-${purchase.coffee_code || purchase.id}.pdf`);
+  doc.save(`CoffeeERP-PO-${purchase.coffee_code || purchase.id}.pdf`);
 }
 
 // ─── Full Report PDF ──────────────────────────────────────────────────────────
@@ -241,7 +241,7 @@ export function exportPORPDF({ filtered, summary, dateRange }) {
     });
   });
 
-  doc.save(`KKGT-PO-Report-${format(new Date(), 'd-MMM-yyyy')}.pdf`);
+  doc.save(`CoffeeERP-PO-Report-${format(new Date(), 'd-MMM-yyyy')}.pdf`);
 }
 
 // ─── Excel Export ─────────────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ export function exportPORExcel({ filtered, summary, dateRange }) {
 
   // Sheet 1: Summary
   const summaryData = [
-    ['KKGT Purchase Orders Report'],
+    ['Coffee ERP — Purchase Orders Report'],
     [`Generated: ${format(new Date(), 'd MMM yyyy HH:mm')}`],
     [],
     ['Metric', 'Count/Value'],
@@ -292,5 +292,5 @@ export function exportPORExcel({ filtered, summary, dateRange }) {
   // Sheet 5: Awaiting Receipt
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([HEADERS, ...filtered.filter(r => r._status === 'Awaiting Receipt').map(toRow)]), 'Awaiting Receipt');
 
-  XLSX.writeFile(wb, `KKGT-PO-Report-${format(new Date(), 'd-MMM-yyyy')}.xlsx`);
+  XLSX.writeFile(wb, `CoffeeERP-PO-Report-${format(new Date(), 'd-MMM-yyyy')}.xlsx`);
 }

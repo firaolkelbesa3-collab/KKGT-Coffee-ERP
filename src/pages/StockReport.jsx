@@ -35,7 +35,7 @@ function CoffeeTypeCard({ data, lastRefresh }) {
   return (
     <div className="rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       {/* Header */}
-      <div className="px-5 py-4" style={{ backgroundColor: '#6F4E37' }}>
+      <div className="px-5 py-4" style={{ backgroundColor: '#126333' }}>
         <p className="text-white font-bold text-lg leading-tight">{coffeeType}</p>
         <p className="text-white/70 text-xs mt-0.5">{supplierCount} supplier{supplierCount !== 1 ? 's' : ''}</p>
       </div>
@@ -448,7 +448,7 @@ export default function StockReport() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${activeTab === tab.id ? 'text-white' : 'bg-card text-muted-foreground hover:text-foreground'}`}
-              style={activeTab === tab.id ? { backgroundColor: '#6F4E37' } : {}}
+              style={activeTab === tab.id ? { backgroundColor: '#126333' } : {}}
             >
               {tab.label}
             </button>

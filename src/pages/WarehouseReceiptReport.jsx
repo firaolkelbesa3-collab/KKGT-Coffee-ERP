@@ -258,7 +258,7 @@ export default function WarehouseReceiptReport() {
           <Button
             size="sm"
             className="gap-1.5 text-xs"
-            style={{ background: '#C8873E' }}
+            style={{ background: '#EB6C25' }}
             onClick={handleExportExcel}
           >
             <Download className="w-3.5 h-3.5" /> Export Excel
@@ -266,7 +266,7 @@ export default function WarehouseReceiptReport() {
           <Button
             size="sm"
             className="gap-1.5 text-xs"
-            style={{ background: '#6F4E37' }}
+            style={{ background: '#126333' }}
             onClick={handleExportPDF}
           >
             <FileText className="w-3.5 h-3.5" /> Export PDF
@@ -328,11 +328,11 @@ export default function WarehouseReceiptReport() {
           <button
             onClick={() => setFilterOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors relative"
-            style={filterActiveCount > 0 ? { borderColor: '#C8873E', color: '#C8873E' } : {}}
+            style={filterActiveCount > 0 ? { borderColor: '#EB6C25', color: '#EB6C25' } : {}}
           >
             <SlidersHorizontal className="w-4 h-4" /> Filters
             {filterActiveCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white text-[10px] flex items-center justify-center font-bold" style={{ background: '#C8873E' }}>
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white text-[10px] flex items-center justify-center font-bold" style={{ background: '#EB6C25' }}>
                 {filterActiveCount}
               </span>
             )}
@@ -382,7 +382,7 @@ export default function WarehouseReceiptReport() {
                         onClick={() => setSelectedReceipt(r)}
                       >
                         <TableCell className="text-muted-foreground text-xs">{(page - 1) * pageSize + i + 1}</TableCell>
-                        <TableCell className="font-mono text-xs font-medium text-[#6F4E37] whitespace-nowrap">{r.coffee_code || '—'}</TableCell>
+                        <TableCell className="font-mono text-xs font-medium text-[#126333] whitespace-nowrap">{r.coffee_code || '—'}</TableCell>
                         <TableCell className="font-medium whitespace-nowrap">{r.supplier_name || '—'}</TableCell>
                         <TableCell className="whitespace-nowrap">
                           {r.grn_code
@@ -420,7 +420,7 @@ export default function WarehouseReceiptReport() {
                   const totRemaining = filtered.reduce((s, r) => s + ((r.warehouse_received_net_kg || 0) - (sampleKgBySupplier[r.supplier_name] || 0) - (processingKgBySupplier[r.supplier_name] || 0)), 0);
                   const totBags = filtered.reduce((s, r) => s + (r.bags_received || 0), 0);
                   return (
-                    <TableRow className="font-bold text-xs border-t-2 border-border" style={{ background: '#C8873E', color: '#fff' }}>
+                    <TableRow className="font-bold text-xs border-t-2 border-border" style={{ background: '#EB6C25', color: '#fff' }}>
                       <TableCell colSpan={6} className="font-bold text-white text-xs">TOTALS ({filtered.length} records)</TableCell>
                       <TableCell className="text-right text-white">{fmt(totDispatch)}</TableCell>
                       <TableCell className="text-right text-white">{fmt(totReceived)}</TableCell>

@@ -6,12 +6,12 @@ import {
 } from 'recharts';
 import { TrendingUp, BarChart3, Wallet } from 'lucide-react';
 
-// Brand palette
-const COFFEE = '#6F4E37';
-const AMBER = '#C8873E';
-const AMBER_LT = '#E0A458';
-const LEAF = '#5E8C3A';
-const TYPE_COLORS = ['#6F4E37', '#C8873E', '#5E8C3A', '#8B6F47', '#A9772F', '#4E342E'];
+// Brand palette — KKGT Import Export (green + orange)
+const COFFEE = '#126333';
+const AMBER = '#EB6C25';
+const AMBER_LT = '#F0894A';
+const LEAF = '#2E9D5B';
+const TYPE_COLORS = ['#126333', '#EB6C25', '#2E9D5B', '#C9A227', '#8A5A2B', '#0E4D28'];
 
 function fmtKg(n) {
   if (n == null || isNaN(n)) return '0';
@@ -157,7 +157,7 @@ export default function DashboardCharts({ purchaseRecords = [], receipts = [] })
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11 }} stroke="#999" tickFormatter={fmtKg} />
                 <YAxis type="category" dataKey="type" tick={{ fontSize: 11 }} stroke="#999" width={110} />
-                <Tooltip formatter={(v) => `${fmtKg(v)} KG`} contentStyle={{ borderRadius: 8, fontSize: 12 }} cursor={{ fill: '#6F4E3708' }} />
+                <Tooltip formatter={(v) => `${fmtKg(v)} KG`} contentStyle={{ borderRadius: 8, fontSize: 12 }} cursor={{ fill: '#12633308' }} />
                 <Bar dataKey="kg" name="Received KG" radius={[0, 6, 6, 0]} barSize={18}>
                   {byCoffeeType.map((_, i) => <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />)}
                 </Bar>

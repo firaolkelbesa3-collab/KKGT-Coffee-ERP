@@ -31,7 +31,7 @@ export default function Login() {
   return (
     <AuthLayout
       icon={LogIn}
-      title="Welcome to Coffee ERP"
+      title="Welcome to KKGT Import Export"
       subtitle="Sign in with your Google account"
       footer={
         <span className="text-xs text-muted-foreground">

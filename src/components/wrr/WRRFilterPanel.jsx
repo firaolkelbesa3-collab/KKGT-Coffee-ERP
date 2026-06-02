@@ -120,7 +120,7 @@ export default function WRRFilterPanel({ open, onClose, values, onApply, onReset
           </Button>
           <Button
             className="flex-1 text-xs h-8"
-            style={{ background: '#C8873E' }}
+            style={{ background: '#EB6C25' }}
             onClick={() => { onApply(draft); onClose(); }}
           >
             Apply Filters

@@ -20,7 +20,7 @@ export default function AppLayout() {
           </div>
         </main>
         <footer className="border-t border-border bg-card px-6 py-3 text-center text-xs text-muted-foreground">
-          Coffee ERP — Coffee Supply-Chain Management
+          KKGT Import Export — Coffee Supply-Chain Management
         </footer>
       </div>
     </div>

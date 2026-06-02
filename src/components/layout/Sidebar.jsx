@@ -88,16 +88,16 @@ function RailEntry({ group, isActive, isOpen, onMouseEnter, onMouseLeave, entryR
     >
       {/* Active indicator bar */}
       {isActive && (
-        <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full bg-[#C8873E]" />
+        <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full bg-[#EB6C25]" />
       )}
       <div
         className={cn(
           'flex flex-col items-center justify-center gap-1 py-4 w-full cursor-pointer transition-colors duration-150 select-none',
           isActive
-            ? 'text-[#C8873E]'
+            ? 'text-[#EB6C25]'
             : isOpen
-            ? 'text-[#6F4E37]'
-            : 'text-white/60 hover:text-[#6F4E37]'
+            ? 'text-[#126333]'
+            : 'text-white/60 hover:text-[#126333]'
         )}
       >
         <Icon className="w-6 h-6 flex-shrink-0" />
@@ -155,15 +155,15 @@ function FlyoutPortal({ group, location, isItemAllowed, isOpen, flyoutTop, onMou
                   gap: 10,
                   padding: '10px 16px',
                   textDecoration: 'none',
-                  color: isActive ? '#6F4E37' : '#222',
-                  background: isActive ? '#6F4E3712' : 'transparent',
+                  color: isActive ? '#126333' : '#222',
+                  background: isActive ? '#12633312' : 'transparent',
                   fontWeight: isActive ? 600 : 400,
                   transition: 'background 0.1s',
                 }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#6F4E3708'; }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#12633308'; }}
                 onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
               >
-                <Icon style={{ width: 16, height: 16, flexShrink: 0, color: isActive ? '#6F4E37' : '#555' }} />
+                <Icon style={{ width: 16, height: 16, flexShrink: 0, color: isActive ? '#126333' : '#555' }} />
                 <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{item.label}</span>
               </Link>
             );
@@ -231,7 +231,7 @@ function DesktopRail({ location, allowedRoutes, user }) {
       >
         {/* Brand logo */}
         <div className="h-16 flex items-center justify-center border-b border-sidebar-border flex-shrink-0">
-          <img src="/favicon.svg" alt="Coffee ERP" className="w-10 h-10 rounded-lg" />
+          <img src="/pwa-192x192.png" alt="KKGT Import Export" className="w-10 h-10 rounded-lg" />
         </div>
 
         {/* Rail entries */}
@@ -248,11 +248,11 @@ function DesktopRail({ location, allowedRoutes, user }) {
                   <Link to={group.direct} className="relative w-full block">
                     <div className="relative w-full">
                       {active && (
-                        <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full bg-[#C8873E]" />
+                        <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full bg-[#EB6C25]" />
                       )}
                       <div className={cn(
                         'flex flex-col items-center justify-center gap-1 py-4 w-full transition-colors duration-150 select-none',
-                        active ? 'text-[#C8873E]' : 'text-white/60 hover:text-[#6F4E37]'
+                        active ? 'text-[#EB6C25]' : 'text-white/60 hover:text-[#126333]'
                       )}>
                         <group.icon className="w-6 h-6 flex-shrink-0" />
                         <span className="text-[12px] font-semibold uppercase tracking-wide leading-tight text-center px-1">
@@ -369,8 +369,8 @@ export default function Sidebar() {
           if (group.direct) {
             return (
               <Link key={group.id} to={group.direct} className="flex flex-col items-center gap-1 flex-1">
-                <Icon className={cn('w-5 h-5', active ? 'text-[#6F4E37]' : 'text-gray-400')} />
-                <span className={cn('text-[10px] font-medium uppercase tracking-wide', active ? 'text-[#6F4E37]' : 'text-gray-400')}>
+                <Icon className={cn('w-5 h-5', active ? 'text-[#126333]' : 'text-gray-400')} />
+                <span className={cn('text-[10px] font-medium uppercase tracking-wide', active ? 'text-[#126333]' : 'text-gray-400')}>
                   {group.label}
                 </span>
               </Link>
@@ -383,8 +383,8 @@ export default function Sidebar() {
               onClick={() => setMobileDrawer(drawerOpen ? null : group.id)}
               className="flex flex-col items-center gap-1 flex-1"
             >
-              <Icon className={cn('w-5 h-5', active || drawerOpen ? 'text-[#6F4E37]' : 'text-gray-400')} />
-              <span className={cn('text-[10px] font-medium uppercase tracking-wide', active || drawerOpen ? 'text-[#6F4E37]' : 'text-gray-400')}>
+              <Icon className={cn('w-5 h-5', active || drawerOpen ? 'text-[#126333]' : 'text-gray-400')} />
+              <span className={cn('text-[10px] font-medium uppercase tracking-wide', active || drawerOpen ? 'text-[#126333]' : 'text-gray-400')}>
                 {group.label}
               </span>
             </button>
@@ -402,7 +402,7 @@ export default function Sidebar() {
           <div
             style={{ position: 'fixed', left: 0, right: 0, bottom: '64px', background: 'white', borderRadius: '16px 16px 0 0', zIndex: 60, maxHeight: '75vh', overflowY: 'auto' }}
           >
-            <div className="w-9 h-1 bg-[#6F4E37]/25 rounded-full mx-auto mt-2.5" />
+            <div className="w-9 h-1 bg-[#126333]/25 rounded-full mx-auto mt-2.5" />
             <div className="flex items-center justify-between px-5 py-3">
               <h2 className="text-base font-bold text-gray-900">{activeDrawerGroup.flyoutTitle}</h2>
               <button onClick={() => setMobileDrawer(null)} className="text-2xl text-gray-400">×</button>
@@ -419,11 +419,11 @@ export default function Sidebar() {
                     onClick={() => setMobileDrawer(null)}
                     className={cn(
                       'flex items-center gap-3 px-5 py-3.5 border-b border-gray-100',
-                      isCurrent ? 'bg-[#6F4E37]/6' : 'bg-white'
+                      isCurrent ? 'bg-[#126333]/6' : 'bg-white'
                     )}
                   >
-                    <Icon className="w-4 h-4 text-[#6F4E37] flex-shrink-0" />
-                    <span className={cn('text-sm flex-1', isCurrent ? 'text-[#6F4E37] font-medium' : 'text-gray-900')}>
+                    <Icon className="w-4 h-4 text-[#126333] flex-shrink-0" />
+                    <span className={cn('text-sm flex-1', isCurrent ? 'text-[#126333] font-medium' : 'text-gray-900')}>
                       {item.label}
                     </span>
                     <span className="text-lg text-gray-400">›</span>

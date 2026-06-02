@@ -21,7 +21,7 @@ function fmt(n, d = 0) {
 }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, unit, sub, icon: Icon, accentColor = '#6F4E37', highlight = false }) {
+function KpiCard({ label, value, unit, sub, icon: Icon, accentColor = '#126333', highlight = false }) {
   return (
     <div
       className="bg-white rounded-2xl border border-border shadow-sm flex flex-col justify-between p-5 relative overflow-hidden min-w-0"
@@ -35,7 +35,7 @@ function KpiCard({ label, value, unit, sub, icon: Icon, accentColor = '#6F4E37',
         <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground leading-tight min-w-0">{label}</p>
         {Icon && (
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: highlight ? '#C8873E18' : '#6F4E3718' }}>
+            style={{ background: highlight ? '#EB6C2518' : '#12633318' }}>
             <Icon className="w-4 h-4" style={{ color: accentColor }} />
           </div>
         )}
@@ -44,7 +44,7 @@ function KpiCard({ label, value, unit, sub, icon: Icon, accentColor = '#6F4E37',
         <div className="flex flex-col mt-2">
           <span
             className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight break-words min-w-0"
-            style={{ color: highlight ? '#C8873E' : '#6F4E37' }}
+            style={{ color: highlight ? '#EB6C25' : '#126333' }}
           >
             {value}
           </span>
@@ -57,7 +57,7 @@ function KpiCard({ label, value, unit, sub, icon: Icon, accentColor = '#6F4E37',
 }
 
 // ── Section Heading ───────────────────────────────────────────────────────────
-function SectionHeading({ children, color = '#6F4E37' }) {
+function SectionHeading({ children, color = '#126333' }) {
   return (
     <div className="flex items-center gap-3 mb-4">
       <div className="w-1 h-5 rounded-full flex-shrink-0" style={{ background: color }} />
@@ -285,7 +285,7 @@ export default function Dashboard() {
               onClick={() => setActiveView(v)}
               className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all duration-150"
               style={activeView === v
-                ? { background: '#6F4E37', color: 'white' }
+                ? { background: '#126333', color: 'white' }
                 : { background: 'transparent', color: '#888' }
               }
             >
@@ -316,7 +316,7 @@ export default function Dashboard() {
 
           {/* ── Stock & Financials ── */}
           <div>
-            <SectionHeading color="#6F4E37">Stock &amp; Financials</SectionHeading>
+            <SectionHeading color="#126333">Stock &amp; Financials</SectionHeading>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-w-0">
               <KpiCard
                 label="Warehouse Received"
@@ -324,7 +324,7 @@ export default function Dashboard() {
                 unit="KG"
                 sub="Total received at warehouse"
                 icon={Warehouse}
-                accentColor="#6F4E37"
+                accentColor="#126333"
               />
               <KpiCard
                 label="Remaining Stock"
@@ -332,7 +332,7 @@ export default function Dashboard() {
                 unit="KG"
                 sub="Available in warehouse"
                 icon={Package}
-                accentColor="#6F4E37"
+                accentColor="#126333"
               />
               <KpiCard
                 label="Grand Total"
@@ -340,7 +340,7 @@ export default function Dashboard() {
                 unit="ETB"
                 sub="Confirmed warehouse purchases"
                 icon={Coins}
-                accentColor="#6F4E37"
+                accentColor="#126333"
               />
               <KpiCard
                 label="Balance Owed"
@@ -348,7 +348,7 @@ export default function Dashboard() {
                 unit="ETB"
                 sub="Outstanding payments"
                 icon={AlertCircle}
-                accentColor="#C8873E"
+                accentColor="#EB6C25"
                 highlight={kpis.balanceOwedEtb > 0}
               />
             </div>
@@ -360,14 +360,14 @@ export default function Dashboard() {
                 unit="KG"
                 sub="Pool 2 — across all coffee types"
                 icon={RefreshCw}
-                accentColor="#C8873E"
+                accentColor="#EB6C25"
               />
               <KpiCard
                 label="Pending Inspections"
                 value={pendingInspections}
                 sub="Inspections with no result yet"
                 icon={ClipboardCheck}
-                accentColor={pendingInspections > 0 ? '#C8873E' : '#6F4E37'}
+                accentColor={pendingInspections > 0 ? '#EB6C25' : '#126333'}
                 highlight={pendingInspections > 0}
               />
             </div>
@@ -375,7 +375,7 @@ export default function Dashboard() {
 
           {/* ── Operations ── */}
           <div>
-            <SectionHeading color="#6F4E37">Operations</SectionHeading>
+            <SectionHeading color="#126333">Operations</SectionHeading>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 min-w-0">
               <KpiCard
                 label="KG Sent to Processing"
@@ -383,7 +383,7 @@ export default function Dashboard() {
                 unit="KG"
                 sub="Cumulative processing input"
                 icon={Factory}
-                accentColor="#6F4E37"
+                accentColor="#126333"
               />
               <KpiCard
                 label="Export Profit (Completed)"
@@ -391,40 +391,40 @@ export default function Dashboard() {
                 unit="ETB"
                 sub="Profit from completed contracts"
                 icon={TrendingUp}
-                accentColor="#6F4E37"
+                accentColor="#126333"
               />
               <KpiCard
                 label="Suppliers"
                 value={kpis.suppliersCount}
                 sub={`${kpis.fullyPaidCount} fully paid · ${kpis.partiallyPaidCount} partial`}
                 icon={Users}
-                accentColor="#6F4E37"
+                accentColor="#126333"
               />
             </div>
           </div>
 
           {/* ── Trends & Insights (interactive charts) ── */}
           <div>
-            <SectionHeading color="#6F4E37">Trends &amp; Insights</SectionHeading>
+            <SectionHeading color="#126333">Trends &amp; Insights</SectionHeading>
             <DashboardCharts purchaseRecords={purchaseRecords} receipts={receipts} />
           </div>
 
           {/* ── Payment Progress ── */}
           <div>
-            <SectionHeading color="#6F4E37">Payment Progress</SectionHeading>
+            <SectionHeading color="#126333">Payment Progress</SectionHeading>
             <div className="bg-white rounded-2xl border border-border shadow-sm p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold mb-0.5">Total Paid</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold" style={{ color: '#6F4E37' }}>{fmt(kpis.totalPaidEtb)}</span>
+                    <span className="text-2xl font-bold" style={{ color: '#126333' }}>{fmt(kpis.totalPaidEtb)}</span>
                     <span className="text-sm text-muted-foreground font-medium">ETB</span>
                     <span className="text-sm text-muted-foreground">of {fmt(kpis.grandTotalEtb)} ETB</span>
                   </div>
                 </div>
                 <div
                   className="px-4 py-2 rounded-xl font-bold text-lg flex-shrink-0"
-                  style={{ background: '#6F4E3718', color: '#6F4E37' }}
+                  style={{ background: '#12633318', color: '#126333' }}
                 >
                   {kpis.payPct.toFixed(1)}%
                 </div>
@@ -432,13 +432,13 @@ export default function Dashboard() {
               <div className="w-full h-4 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${kpis.payPct}%`, background: 'linear-gradient(90deg, #6F4E37, #C8873E)' }}
+                  style={{ width: `${kpis.payPct}%`, background: 'linear-gradient(90deg, #126333, #EB6C25)' }}
                 />
               </div>
               <div className="flex justify-between mt-2 text-xs">
                 <span className="text-muted-foreground">ETB 0</span>
                 <span className={`font-semibold ${kpis.balanceOwedEtb > 0 ? '' : 'text-green-700'}`}
-                  style={kpis.balanceOwedEtb > 0 ? { color: '#C8873E' } : {}}>
+                  style={kpis.balanceOwedEtb > 0 ? { color: '#EB6C25' } : {}}>
                   {kpis.balanceOwedEtb > 0 ? `${fmt(kpis.balanceOwedEtb)} ETB remaining` : '✓ Fully settled'}
                 </span>
               </div>
@@ -448,7 +448,7 @@ export default function Dashboard() {
           {/* ── View-specific ── */}
           {activeView === 'supplier' && (
             <div>
-              <SectionHeading color="#6F4E37">Supplier Balances</SectionHeading>
+              <SectionHeading color="#126333">Supplier Balances</SectionHeading>
               <SupplierBalancesTable dateRange={balanceRange} />
             </div>
           )}
@@ -456,20 +456,20 @@ export default function Dashboard() {
           {activeView === 'export' && (
             <div className="space-y-6">
               <div>
-                <SectionHeading color="#6F4E37">Export Profitability</SectionHeading>
+                <SectionHeading color="#126333">Export Profitability</SectionHeading>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <KpiCard label="Total Contracts" value={exportSummary.totalContracts} sub="All export contracts" icon={BarChart3} accentColor="#6F4E37" />
-                  <KpiCard label="Total Export Value USD" value={`$${fmt(exportSummary.totalUsd)}`} sub="USD across all contracts" icon={TrendingUp} accentColor="#6F4E37" />
-                  <KpiCard label="Total Export Value ETB" value={fmt(exportSummary.totalEtb)} unit="ETB" sub="ETB at contract rates" icon={Coins} accentColor="#6F4E37" />
-                  <KpiCard label="Total Profit ETB" value={fmt(exportSummary.totalProfitEtb)} unit="ETB" sub="Cumulative ETB profit" icon={TrendingUp} accentColor="#6F4E37" />
-                  <KpiCard label="Outstanding USD" value={`$${fmt(exportSummary.totalOutstandingUsd)}`} sub="Unpaid export receivables" icon={AlertCircle} accentColor="#C8873E" highlight={exportSummary.totalOutstandingUsd > 0} />
-                  <KpiCard label="Avg Profit / Contract" value={fmt(exportSummary.avgProfit)} unit="ETB" sub="Average per contract" icon={BarChart3} accentColor="#6F4E37" />
+                  <KpiCard label="Total Contracts" value={exportSummary.totalContracts} sub="All export contracts" icon={BarChart3} accentColor="#126333" />
+                  <KpiCard label="Total Export Value USD" value={`$${fmt(exportSummary.totalUsd)}`} sub="USD across all contracts" icon={TrendingUp} accentColor="#126333" />
+                  <KpiCard label="Total Export Value ETB" value={fmt(exportSummary.totalEtb)} unit="ETB" sub="ETB at contract rates" icon={Coins} accentColor="#126333" />
+                  <KpiCard label="Total Profit ETB" value={fmt(exportSummary.totalProfitEtb)} unit="ETB" sub="Cumulative ETB profit" icon={TrendingUp} accentColor="#126333" />
+                  <KpiCard label="Outstanding USD" value={`$${fmt(exportSummary.totalOutstandingUsd)}`} sub="Unpaid export receivables" icon={AlertCircle} accentColor="#EB6C25" highlight={exportSummary.totalOutstandingUsd > 0} />
+                  <KpiCard label="Avg Profit / Contract" value={fmt(exportSummary.avgProfit)} unit="ETB" sub="Average per contract" icon={BarChart3} accentColor="#126333" />
                 </div>
               </div>
 
               {Object.keys(exportSummary.kgByCoffeeType).length > 0 && (
                 <div className="bg-white rounded-2xl border border-border shadow-sm p-5">
-                  <SectionHeading color="#6F4E37">Exported KG by Coffee Type</SectionHeading>
+                  <SectionHeading color="#126333">Exported KG by Coffee Type</SectionHeading>
                   <div className="space-y-2.5">
                     {Object.entries(exportSummary.kgByCoffeeType).map(([ct, kg]) => (
                       <div key={ct} className="flex items-center justify-between text-sm py-1 border-b border-border/40 last:border-0">
@@ -483,13 +483,13 @@ export default function Dashboard() {
 
               {Object.keys(exportSummary.availableStock).length > 0 && (
                 <div className="bg-white rounded-2xl border border-border shadow-sm p-5">
-                  <SectionHeading color="#6F4E37">Available Stock (Ready to Export)</SectionHeading>
+                  <SectionHeading color="#126333">Available Stock (Ready to Export)</SectionHeading>
                   <div className="space-y-2.5">
                     {Object.entries(exportSummary.availableStock).map(([ct, kg]) => (
                       <div key={ct} className="flex items-center justify-between text-sm py-1 border-b border-border/40 last:border-0">
                         <span className="text-muted-foreground">{ct}</span>
                         <span className={`font-semibold ${kg > 0 ? '' : 'text-muted-foreground'}`}
-                          style={kg > 0 ? { color: '#6F4E37' } : {}}>
+                          style={kg > 0 ? { color: '#126333' } : {}}>
                           {fmt(kg, 0)} KG {kg === 0 ? '(fully exported)' : ''}
                         </span>
                       </div>
@@ -505,21 +505,21 @@ export default function Dashboard() {
                   unit="KG"
                   sub="Deducted this season across all coffee types"
                   icon={ClipboardCheck}
-                  accentColor="#6F4E37"
+                  accentColor="#126333"
                 />
                 <KpiCard
                   label="Inspection Pass Rate"
                   value={`${passRate.toFixed(1)}%`}
                   sub={`${inspections.filter(i => i.result === 'Passed').length} passed / ${inspections.filter(i => i.result === 'Passed' || i.result === 'Failed').length} decided`}
                   icon={ClipboardCheck}
-                  accentColor={passRate >= 80 ? '#6F4E37' : '#C8873E'}
+                  accentColor={passRate >= 80 ? '#126333' : '#EB6C25'}
                 />
               </div>
 
               <div className="bg-white rounded-2xl border border-border shadow-sm p-5">
-                <SectionHeading color="#6F4E37">Overall Reject Rate</SectionHeading>
+                <SectionHeading color="#126333">Overall Reject Rate</SectionHeading>
                 <div className="flex items-baseline gap-2">
-                  <span className="font-bold" style={{ fontSize: '2rem', color: kpis.overallRejectPct === 0 ? '#6F4E37' : '#ef4444' }}>
+                  <span className="font-bold" style={{ fontSize: '2rem', color: kpis.overallRejectPct === 0 ? '#126333' : '#ef4444' }}>
                     {kpis.overallRejectPct.toFixed(1)}%
                   </span>
                   <span className="text-sm text-muted-foreground">of total processed KG</span>

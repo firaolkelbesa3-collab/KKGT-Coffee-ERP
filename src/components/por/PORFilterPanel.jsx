@@ -75,7 +75,7 @@ export default function PORFilterPanel({ open, onClose, suppliers, filters, onAp
             <div className="space-y-1.5">
               {STATUSES.map(s => (
                 <label key={s} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" className="accent-[#6F4E37]" checked={(draft.statuses || []).includes(s)} onChange={() => toggleStatus(s)} />
+                  <input type="checkbox" className="accent-[#126333]" checked={(draft.statuses || []).includes(s)} onChange={() => toggleStatus(s)} />
                   {s}
                 </label>
               ))}
@@ -116,7 +116,7 @@ export default function PORFilterPanel({ open, onClose, suppliers, filters, onAp
         </div>
 
         <div className="px-5 py-4 border-t flex gap-2">
-          <Button className="flex-1 bg-[#C8873E] hover:bg-[#d4591c] text-white" onClick={() => onApply(draft)}>Apply Filters</Button>
+          <Button className="flex-1 bg-[#EB6C25] hover:bg-[#d4591c] text-white" onClick={() => onApply(draft)}>Apply Filters</Button>
           <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={onReset}>Reset</Button>
         </div>
       </div>

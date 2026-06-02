@@ -40,7 +40,7 @@ function exportSummaryPDF(agentSummary, supplierSummary, agentTotals, supplierTo
   doc.setFontSize(14);
   doc.setFont(undefined, 'bold');
   doc.setTextColor(200, 135, 62);
-  doc.text('Coffee ERP', margin, 12);
+  doc.text('KKGT Import Export', margin, 12);
   doc.setTextColor(111, 78, 55);
   doc.setFontSize(11);
   doc.text('Bag Ledger — Summary', margin, 18);

@@ -44,7 +44,7 @@ export default function ProcessingSummaryBar({ entries = [] }) {
       unit: 'bags',
       sub: 'Standard entries only',
       icon: Package,
-      valueClass: 'text-[#6F4E37]',
+      valueClass: 'text-[#126333]',
       cardClass: '',
     },
     {
@@ -62,7 +62,7 @@ export default function ProcessingSummaryBar({ entries = [] }) {
       unit: 'KG',
       sub: 'After factory weighing',
       icon: CheckCircle,
-      valueClass: 'text-[#6F4E37]',
+      valueClass: 'text-[#126333]',
       cardClass: '',
     },
     {
@@ -76,7 +76,7 @@ export default function ProcessingSummaryBar({ entries = [] }) {
       valueClass: summary.totalVariance === null
         ? 'text-muted-foreground'
         : variancePositive
-          ? 'text-[#6F4E37]'
+          ? 'text-[#126333]'
           : 'text-red-600',
       cardClass: summary.totalVariance !== null && !variancePositive
         ? 'bg-red-50 border-red-200'
@@ -88,7 +88,7 @@ export default function ProcessingSummaryBar({ entries = [] }) {
     <div className="space-y-2">
       {/* Section header */}
       <div className="flex items-center gap-2">
-        <div className="w-1 h-4 rounded-full bg-[#6F4E37]" />
+        <div className="w-1 h-4 rounded-full bg-[#126333]" />
         <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Summary — {summary.totalEntries} {summary.totalEntries === 1 ? 'entry' : 'entries'}
         </span>
@@ -121,7 +121,7 @@ export default function ProcessingSummaryBar({ entries = [] }) {
 
       {/* Recleaning footnote */}
       {summary.totalRecleaningKg > 0 && (
-        <p className="text-[11px] text-[#C8873E] pl-1">
+        <p className="text-[11px] text-[#EB6C25] pl-1">
           ⚠ Includes {summary.totalRecleaningKg.toLocaleString()} KG recleaning — excluded from bag and assumed KG totals.
         </p>
       )}

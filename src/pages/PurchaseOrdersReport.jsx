@@ -186,7 +186,7 @@ export default function PurchaseOrdersReport() {
         <Button
           onClick={() => exportPORPDF({ filtered, summary, dateRange })}
           className="gap-2"
-          style={{ backgroundColor: '#6F4E37' }}
+          style={{ backgroundColor: '#126333' }}
         >
           <Download className="w-4 h-4" /> Export PDF
         </Button>

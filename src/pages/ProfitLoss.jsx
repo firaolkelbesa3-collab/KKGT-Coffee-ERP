@@ -17,9 +17,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { exportReportPDF, exportReportXLSX } from '@/lib/reportEngine';
 
 // ── Brand palette ──────────────────────────────────────────────────────────
-const COFFEE = '#6F4E37';
-const AMBER = '#C8873E';
-const LEAF = '#5E8C3A';
+const COFFEE = '#126333';
+const AMBER = '#EB6C25';
+const LEAF = '#2E9D5B';
 const RED = '#C0392B';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -70,9 +70,9 @@ function marginOf(c) {
 // ── small presentational pieces ───────────────────────────────────────────────
 function KpiCard({ icon: Icon, label, value, sub, tone = 'coffee' }) {
   const tones = {
-    coffee: 'from-[#6F4E37] to-[#8B6F47]',
-    amber: 'from-[#C8873E] to-[#E0A458]',
-    leaf: 'from-[#5E8C3A] to-[#7BAE4E]',
+    coffee: 'from-[#126333] to-[#1C8347]',
+    amber: 'from-[#EB6C25] to-[#F0894A]',
+    leaf: 'from-[#2E9D5B] to-[#46B673]',
     red: 'from-[#C0392B] to-[#E05B4D]',
   };
   return (

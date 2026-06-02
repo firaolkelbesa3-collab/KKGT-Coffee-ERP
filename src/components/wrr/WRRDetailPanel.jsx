@@ -132,7 +132,7 @@ export default function WRRDetailPanel({ receipt, purchase, sampleKg, processing
     doc.text(`Generated: ${format(new Date(), 'd MMM yyyy HH:mm')}`, lx, 285);
     doc.text('Page 1 of 1', pageW - lx, 285, { align: 'right' });
 
-    doc.save(`CoffeeERP-Receipt-${receipt.coffee_code || receipt.id}.pdf`);
+    doc.save(`KKGT-Receipt-${receipt.coffee_code || receipt.id}.pdf`);
   };
 
   return (
@@ -140,7 +140,7 @@ export default function WRRDetailPanel({ receipt, purchase, sampleKg, processing
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-96 bg-card shadow-2xl z-50 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-border" style={{ background: '#6F4E37' }}>
+        <div className="p-4 border-b border-border" style={{ background: '#126333' }}>
           <div className="flex items-start justify-between">
             <div>
               <p className="font-mono font-bold text-lg text-white">{receipt.coffee_code || '—'}</p>
@@ -152,7 +152,7 @@ export default function WRRDetailPanel({ receipt, purchase, sampleKg, processing
             <Button size="sm" variant="outline" className="flex-1 text-xs border-green-400 text-white hover:bg-green-700 bg-transparent" onClick={onEdit}>
               <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
             </Button>
-            <Button size="sm" className="flex-1 text-xs bg-white text-[#6F4E37] hover:bg-green-50" onClick={handlePrintPDF}>
+            <Button size="sm" className="flex-1 text-xs bg-white text-[#126333] hover:bg-green-50" onClick={handlePrintPDF}>
               <Printer className="w-3.5 h-3.5 mr-1" /> Print PDF
             </Button>
           </div>

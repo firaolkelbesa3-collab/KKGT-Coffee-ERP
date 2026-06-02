@@ -1,5 +1,5 @@
 /**
- * Coffee ERP — unified branded report engine.
+ * KKGT Import Export — unified branded report engine.
  *
  * One place that produces beautiful, consistent PDF + Excel for every report.
  *   - PDF   via jsPDF + jspdf-autotable (auto layout, page breaks, header/footer)
@@ -14,15 +14,15 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
-import { LOGO_PNG_DATAURL } from '@/lib/brandLogo';
+import { LOGO_PNG_DATAURL, LOGO_ASPECT } from '@/lib/brandLogo';
 
-// Brand palette
-const COFFEE = '#2E1A12';      // espresso (header band)
-const COFFEE_RGB = [46, 26, 18];
-const AMBER = '#C8873E';
-const AMBER_RGB = [200, 135, 62];
-const ROW_ALT = '#F6F0E9';     // cream stripe
-const ROW_ALT_RGB = [246, 240, 233];
+// Brand palette — KKGT Import Export (green + orange from the logo)
+const COFFEE = '#126333';      // brand green (header band)
+const COFFEE_RGB = [18, 99, 51];
+const AMBER = '#EB6C25';       // brand orange (accent / footer)
+const AMBER_RGB = [235, 108, 37];
+const ROW_ALT = '#EAF1EC';     // light green stripe
+const ROW_ALT_RGB = [234, 241, 236];
 
 // Decide which columns are numeric (right-align + number format) by sampling rows.
 // A value is numeric only if it's a clean number — NOT a code like "B-023"
@@ -148,22 +148,27 @@ export function exportReportPDF({ title, subtitle, headers, rows, totals, autoTo
   }
 
   const drawHeader = () => {
-    // Espresso band
+    // Brand green band
     doc.setFillColor(...COFFEE_RGB);
     doc.rect(0, 0, pageW, 64, 'F');
-    // Logo
-    try { doc.addImage(LOGO_PNG_DATAURL, 'PNG', 28, 12, 40, 40); } catch { /* logo optional */ }
+    // Logo on a white chip (logo keeps its green letters, so it needs white behind it)
+    const logoH = 30, logoW = logoH * LOGO_ASPECT;
+    const chipX = 20, chipY = 12, chipPad = 7;
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(chipX, chipY, logoW + chipPad * 2, logoH + chipPad * 2, 4, 4, 'F');
+    try { doc.addImage(LOGO_PNG_DATAURL, 'PNG', chipX + chipPad, chipY + chipPad, logoW, logoH); } catch { /* logo optional */ }
+    const textX = chipX + logoW + chipPad * 2 + 14;
     // Brand + title
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('Coffee ERP', 80, 30);
+    doc.setFontSize(15);
+    doc.text('KKGT Import Export', textX, 30);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
-    doc.text(title || 'Report', 80, 48);
+    doc.text(title || 'Report', textX, 48);
     // Meta (right)
     doc.setFontSize(8);
-    doc.setTextColor(220, 200, 180);
+    doc.setTextColor(205, 228, 213);
     doc.text(`Generated ${generated}`, pageW - 28, 26, { align: 'right' });
     if (subtitle) doc.text(String(subtitle), pageW - 28, 40, { align: 'right' });
     doc.text('Confidential', pageW - 28, 54, { align: 'right' });
@@ -180,7 +185,7 @@ export function exportReportPDF({ title, subtitle, headers, rows, totals, autoTo
     margin: { top: 78, left: 28, right: 28, bottom: 36 },
     styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', valign: 'middle' },
     headStyles: { fillColor: COFFEE_RGB, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'left' },
-    footStyles: { fillColor: AMBER_RGB, textColor: [46, 26, 18], fontStyle: 'bold' },
+    footStyles: { fillColor: AMBER_RGB, textColor: [255, 255, 255], fontStyle: 'bold' },
     alternateRowStyles: { fillColor: ROW_ALT_RGB },
     columnStyles,
     didDrawPage: () => {
@@ -190,7 +195,7 @@ export function exportReportPDF({ title, subtitle, headers, rows, totals, autoTo
       const page = doc.internal.getNumberOfPages();
       doc.setFontSize(7);
       doc.setTextColor(120, 120, 120);
-      doc.text('Coffee ERP · Coffee Supply Chain', 28, pageH - 14);
+      doc.text('KKGT Import Export · Coffee Supply Chain', 28, pageH - 14);
       doc.text(`Page ${page}`, pageW - 28, pageH - 14, { align: 'right' });
     },
   });
@@ -203,7 +208,7 @@ export function exportReportPDF({ title, subtitle, headers, rows, totals, autoTo
 // ───────────────────────────────────────────────────────────────────────────
 export async function exportReportXLSX({ title, subtitle, headers, rows, totals, autoTotals, filename = 'report' }) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Coffee ERP';
+  wb.creator = 'KKGT Import Export';
   wb.created = new Date();
   const ws = wb.addWorksheet((title || 'Report').slice(0, 28), {
     views: [{ state: 'frozen', ySplit: 4 }],
@@ -217,10 +222,10 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
   const firstDataRow = 5;
   const lastDataRow = 4 + rows.length;
 
-  // Embed logo (top-left).
+  // Embed logo (top-left), keeping the wide aspect ratio.
   try {
     const imgId = wb.addImage({ base64: LOGO_PNG_DATAURL, extension: 'png' });
-    ws.addImage(imgId, { tl: { col: 0, row: 0 }, ext: { width: 44, height: 44 } });
+    ws.addImage(imgId, { tl: { col: 0, row: 0 }, ext: { width: Math.round(40 * LOGO_ASPECT), height: 40 } });
   } catch { /* logo optional */ }
 
   // Title band (rows 1-3), merged across all columns.
@@ -229,7 +234,7 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
   ws.mergeCells(`A2:${lastColLetter}2`);
   ws.mergeCells(`A3:${lastColLetter}3`);
   const titleCell = ws.getCell('A1');
-  titleCell.value = 'Coffee ERP';
+  titleCell.value = 'KKGT Import Export';
   titleCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 4 };
   const subCell = ws.getCell('A2');
@@ -238,12 +243,12 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
   subCell.alignment = { horizontal: 'left', indent: 4 };
   const metaCell = ws.getCell('A3');
   metaCell.value = `Generated ${format(new Date(), 'dd MMM yyyy, HH:mm')}${subtitle ? `   ·   ${subtitle}` : ''}   ·   Confidential`;
-  metaCell.font = { size: 9, color: { argb: 'FFD8C8B4' } };
+  metaCell.font = { size: 9, color: { argb: 'FFCDE4D5' } };
   metaCell.alignment = { horizontal: 'left', indent: 4 };
   for (let r = 1; r <= 3; r++) {
     ws.getRow(r).height = r === 1 ? 24 : 16;
     for (let c = 1; c <= nCols; c++) {
-      ws.getCell(r, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E1A12' } };
+      ws.getCell(r, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF126333' } };
     }
   }
 
@@ -253,7 +258,7 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
     const cell = headerRow.getCell(i + 1);
     cell.value = h;
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6F4E37' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF126333' } };
     cell.alignment = { horizontal: numericCols[i] ? 'right' : 'left', vertical: 'middle', wrapText: true };
     cell.border = { bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } } };
   });
@@ -274,7 +279,7 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
         cell.value = raw ?? '';                      // codes like "B-023" stay text
       }
       if (ri % 2 === 1) {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF6F0E9' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF1EC' } };
       }
     });
   });
@@ -294,8 +299,8 @@ export async function exportReportXLSX({ title, subtitle, headers, rows, totals,
       } else if (ci === labelIdx) {
         cell.value = 'TOTAL';
       }
-      cell.font = { bold: true, color: { argb: 'FF2E1A12' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC8873E' } };
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEB6C25' } };
     });
   }
 
@@ -370,18 +375,22 @@ export function exportStatementPDF(party, lots = [], payments = [], opts = {}) {
   // ── Header band ──
   doc.setFillColor(...COFFEE_RGB);
   doc.rect(0, 0, pageW, 70, 'F');
-  try { doc.addImage(LOGO_PNG_DATAURL, 'PNG', 32, 14, 42, 42); } catch { /* optional */ }
+  const sLogoH = 32, sLogoW = sLogoH * LOGO_ASPECT, sPad = 7;
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(28, 14, sLogoW + sPad * 2, sLogoH + sPad * 2, 4, 4, 'F');
+  try { doc.addImage(LOGO_PNG_DATAURL, 'PNG', 28 + sPad, 14 + sPad, sLogoW, sLogoH); } catch { /* optional */ }
+  const sTextX = 28 + sLogoW + sPad * 2 + 14;
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(17);
-  doc.text('Coffee ERP', 86, 32);
+  doc.text('KKGT Import Export', sTextX, 32);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-  doc.setTextColor(220, 200, 180);
-  doc.text('Coffee Supply Chain', 86, 47);
+  doc.setTextColor(205, 228, 213);
+  doc.text('Coffee Supply Chain', sTextX, 47);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
   doc.text('STATEMENT OF ACCOUNT', pageW - 32, 34, { align: 'right' });
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-  doc.setTextColor(220, 200, 180);
+  doc.setTextColor(205, 228, 213);
   doc.text(`Statement date: ${today}`, pageW - 32, 50, { align: 'right' });
   if (opts.period) doc.text(`Period: ${opts.period}`, pageW - 32, 62, { align: 'right' });
 
@@ -400,9 +409,9 @@ export function exportStatementPDF(party, lots = [], payments = [], opts = {}) {
   y += 48;
   const boxW = (pageW - 64 - 24) / 3;
   const boxes = [
-    { label: 'TOTAL PURCHASES', value: money(totalCharges), fill: [246, 240, 233], text: [46, 26, 18] },
-    { label: 'TOTAL PAID', value: money(totalPayments), fill: [246, 240, 233], text: [46, 26, 18] },
-    { label: 'BALANCE DUE (ETB)', value: money(balance), fill: AMBER_RGB, text: [46, 26, 18] },
+    { label: 'TOTAL PURCHASES', value: money(totalCharges), fill: ROW_ALT_RGB, text: COFFEE_RGB },
+    { label: 'TOTAL PAID', value: money(totalPayments), fill: ROW_ALT_RGB, text: COFFEE_RGB },
+    { label: 'BALANCE DUE (ETB)', value: money(balance), fill: AMBER_RGB, text: [255, 255, 255] },
   ];
   boxes.forEach((b, i) => {
     const x = 32 + i * (boxW + 12);
@@ -422,13 +431,13 @@ export function exportStatementPDF(party, lots = [], payments = [], opts = {}) {
     margin: { left: 32, right: 32, bottom: 50 },
     styles: { fontSize: 8, cellPadding: 4, valign: 'middle' },
     headStyles: { fillColor: COFFEE_RGB, textColor: [255, 255, 255], fontStyle: 'bold' },
-    footStyles: { fillColor: AMBER_RGB, textColor: [46, 26, 18], fontStyle: 'bold' },
+    footStyles: { fillColor: AMBER_RGB, textColor: [255, 255, 255], fontStyle: 'bold' },
     alternateRowStyles: { fillColor: ROW_ALT_RGB },
     columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
     didDrawPage: () => {
       const pageH = doc.internal.pageSize.getHeight();
       doc.setFontSize(7); doc.setTextColor(120, 120, 120);
-      doc.text('Coffee ERP · Statement of Account · Confidential', 32, pageH - 28);
+      doc.text('KKGT Import Export · Statement of Account · Confidential', 32, pageH - 28);
       doc.text(`Generated ${today}`, pageW - 32, pageH - 28, { align: 'right' });
       // Signature line
       doc.setDrawColor(180, 180, 180);

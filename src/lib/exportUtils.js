@@ -3,7 +3,7 @@
  *
  * These keep the original signatures every report already calls, but now
  * delegate to the unified branded report engine (jspdf-autotable + exceljs).
- * So every existing report instantly gets the beautiful, consistent Coffee ERP
+ * So every existing report instantly gets the beautiful, consistent KKGT Import Export
  * styling with zero call-site changes.
  */
 import { exportReportPDF, exportReportXLSX } from '@/lib/reportEngine';

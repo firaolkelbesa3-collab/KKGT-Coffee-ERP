@@ -62,7 +62,7 @@ export default function PORDetailPanel({ purchase, onClose, processingLogs }) {
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="relative bg-white w-full max-w-2xl h-full shadow-2xl flex flex-col overflow-hidden z-10">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ backgroundColor: '#6F4E37' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ backgroundColor: '#126333' }}>
           <div>
             <div className="text-white font-mono font-bold text-lg">{purchase.coffee_code || 'Purchase Detail'}</div>
             <div className="mt-1"><PORStatusBadge status={purchase._status} size="md" /></div>
@@ -93,7 +93,7 @@ export default function PORDetailPanel({ purchase, onClose, processingLogs }) {
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {/* Section A — Purchase Details */}
           <Section title="A — Purchase Details">
-            <Row label="Coffee Code" value={purchase.coffee_code || '—'} valueClass="text-[#6F4E37] font-mono" />
+            <Row label="Coffee Code" value={purchase.coffee_code || '—'} valueClass="text-[#126333] font-mono" />
             <Row label="Date" value={fmtDate(purchase.purchase_date)} />
             <Row label="Supplier" value={purchase.supplier_name || '—'} />
             <Row label="Agent" value={purchase.agent || '—'} />

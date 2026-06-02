@@ -143,7 +143,7 @@ export default function SupplierBalancesTable({ dateRange }) {
     <div>
       {/* Last updated */}
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#6F4E37', letterSpacing: '0.12em' }}>Supplier Balances</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#126333', letterSpacing: '0.12em' }}>Supplier Balances</p>
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-muted-foreground">Last updated: {lastUpdated.toLocaleTimeString()}</span>
           <button onClick={refresh} className="p-1 rounded hover:bg-muted transition-colors" title="Refresh now">

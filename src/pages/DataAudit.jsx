@@ -177,7 +177,7 @@ export default function DataAudit() {
       SEVERITY[i.severity]?.label || i.severity, i.category, i.entity, i.record, i.message,
       i.expected ?? '', i.actual ?? '',
     ]);
-    exportXLSX('coffee-erp-data-audit', 'Data Audit Report', headers, rows);
+    exportXLSX('kkgt-data-audit', 'Data Audit Report', headers, rows);
   };
 
   // ── Excel reconciliation state ────────────────────────────────────────
@@ -266,7 +266,7 @@ export default function DataAudit() {
     reconResult.onlyInApp.forEach(r => rows.push(['In app, missing from Excel', r.key, '', '', '']));
     reconResult.mismatches.forEach(m => m.diffs.forEach(d =>
       rows.push(['Value mismatch', m.key, d.field, d.excel, d.app])));
-    exportXLSX('coffee-erp-excel-reconciliation', 'Excel Reconciliation', headers, rows);
+    exportXLSX('kkgt-excel-reconciliation', 'Excel Reconciliation', headers, rows);
   };
 
   if (!canView) {

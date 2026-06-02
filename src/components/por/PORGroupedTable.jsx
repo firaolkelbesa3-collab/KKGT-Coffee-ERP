@@ -115,7 +115,7 @@ function GroupSection({ group, rows, onRowClick }) {
                   >
                     <td className="px-3 py-2.5 text-muted-foreground text-xs">{(page - 1) * pageSize + i + 1}</td>
                     <td className="px-3 py-2.5">
-                      <span className="text-[#6F4E37] font-mono text-xs font-semibold hover:underline">{row.coffee_code || '—'}</span>
+                      <span className="text-[#126333] font-mono text-xs font-semibold hover:underline">{row.coffee_code || '—'}</span>
                     </td>
                     <td className="px-3 py-2.5 text-xs whitespace-nowrap">{fmtDate(row.purchase_date)}</td>
                     <td className="px-3 py-2.5 font-semibold text-sm">{row.supplier_name || '—'}</td>
@@ -182,7 +182,7 @@ export default function PORGroupedTable({ purchases, isLoading, search, onSearch
         <Button variant="outline" className="gap-2 h-9" onClick={onFilterOpen}>
           <SlidersHorizontal className="w-4 h-4" />
           Filter{filterCount > 0 ? ` (${filterCount})` : ''}
-          {filterCount > 0 && <span className="ml-1 bg-[#C8873E] text-white text-xs rounded-full px-1.5 py-0.5">{filterCount}</span>}
+          {filterCount > 0 && <span className="ml-1 bg-[#EB6C25] text-white text-xs rounded-full px-1.5 py-0.5">{filterCount}</span>}
         </Button>
       </div>
       {groups.map(g => (

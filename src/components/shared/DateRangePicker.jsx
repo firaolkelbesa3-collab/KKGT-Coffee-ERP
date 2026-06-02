@@ -71,7 +71,7 @@ function MonthCalendar({ year, month, rangeStart, rangeEnd, hoveredDate, onDayCl
                       : 'hover:bg-muted text-foreground',
                   isToday && !isStart && !isEnd ? 'ring-1 ring-inset ring-orange-400' : '',
                 ].join(' ')}
-                style={isStart || isEnd ? { backgroundColor: '#C8873E' } : {}}
+                style={isStart || isEnd ? { backgroundColor: '#EB6C25' } : {}}
               >
                 {day.getDate()}
               </button>
@@ -194,7 +194,7 @@ export default function DateRangePicker({ from, to, onChange, placeholder = 'Sel
         {/* Selected range display */}
         <div className="text-[11px] font-semibold text-center h-4">
           {draft.start && draft.end
-            ? <span style={{ color: '#C8873E' }}>{toYMD(draft.start)} → {toYMD(draft.end)}</span>
+            ? <span style={{ color: '#EB6C25' }}>{toYMD(draft.start)} → {toYMD(draft.end)}</span>
             : draft.start
               ? <span className="text-muted-foreground">Select end date…</span>
               : <span className="text-muted-foreground">Select start date</span>
@@ -250,7 +250,7 @@ export default function DateRangePicker({ from, to, onChange, placeholder = 'Sel
         className={`flex items-center gap-2 h-9 px-3 rounded-lg border text-sm transition-colors
           ${hasValue ? 'border-orange-400 bg-orange-50 text-orange-800 font-medium' : 'border-border bg-background text-muted-foreground hover:border-primary/50'}`}
       >
-        <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: hasValue ? '#C8873E' : undefined }} />
+        <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: hasValue ? '#EB6C25' : undefined }} />
         <span className="whitespace-nowrap">{displayLabel}</span>
         {hasValue && (
           <span
@@ -287,7 +287,7 @@ export default function DateRangePicker({ from, to, onChange, placeholder = 'Sel
             <div className="flex-1 p-4">
               <div className="text-xs font-semibold text-center mb-3 h-5">
                 {draft.start && draft.end
-                  ? <span style={{ color: '#C8873E' }}>{toYMD(draft.start)} → {toYMD(draft.end)}</span>
+                  ? <span style={{ color: '#EB6C25' }}>{toYMD(draft.start)} → {toYMD(draft.end)}</span>
                   : draft.start
                     ? <span className="text-muted-foreground">Select end date…</span>
                     : <span className="text-muted-foreground">Select start date</span>
@@ -325,7 +325,7 @@ export default function DateRangePicker({ from, to, onChange, placeholder = 'Sel
                 size="sm"
                 onClick={handleApply}
                 disabled={!draft.start}
-                style={{ backgroundColor: '#C8873E', borderColor: '#C8873E' }}
+                style={{ backgroundColor: '#EB6C25', borderColor: '#EB6C25' }}
                 className="text-white hover:opacity-90"
               >
                 Apply

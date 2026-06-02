@@ -1,5 +1,5 @@
 /**
- * Data consistency audit (Coffee ERP).
+ * Data consistency audit (KKGT Import Export).
  *
  * Pure functions that scan the app's records, re-run every calculation, and
  * return a flat list of issues so the team can verify the app instead of

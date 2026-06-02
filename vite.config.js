@@ -11,22 +11,21 @@ export default defineConfig({
       // silently swapping the bundle (which left users stuck on stale code).
       registerType: 'prompt',
       injectRegister: false, // we register via the useRegisterSW React hook
-      includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png'],
+      includeAssets: ['favicon-32.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Coffee ERP',
-        short_name: 'Coffee ERP',
-        description: 'Coffee supply-chain ERP — purchase, warehouse, processing & export',
+        name: 'KKGT Import Export',
+        short_name: 'KKGT',
+        description: 'KKGT Import Export — coffee supply-chain: purchase, warehouse, processing & export',
         start_url: '/',
         scope: '/',
         display: 'standalone',
         orientation: 'portrait-primary',
-        background_color: '#2E1A12',
-        theme_color: '#2E1A12',
+        background_color: '#126333',
+        theme_color: '#126333',
         icons: [
           { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
           { src: '/pwa-maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
         ],
       },
       workbox: {

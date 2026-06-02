@@ -262,8 +262,8 @@ function exportContractPDF(contract) {
   if (contract.remark) row('Remark:', contract.remark);
 
   doc.setTextColor(150, 150, 150); doc.setFontSize(7);
-  doc.text(`Generated: ${new Date().toLocaleString()} — Coffee ERP · CONFIDENTIAL`, W / 2, 285, { align: 'center' });
-  doc.save(`CoffeeERP-Contract-${contract.contract_no?.replace(/\//g, '-') || contract.id}.pdf`);
+  doc.text(`Generated: ${new Date().toLocaleString()} — KKGT Import Export · CONFIDENTIAL`, W / 2, 285, { align: 'center' });
+  doc.save(`KKGT-Contract-${contract.contract_no?.replace(/\//g, '-') || contract.id}.pdf`);
 }
 
 // ─── Contract Detail View ─────────────────────────────────────────────────────
@@ -271,7 +271,7 @@ function ContractDetailView({ contract, onBack, onEdit, onUpdatePayments }) {
   const contractRate = contract.contract_rate_etb || contract.usd_rate_etb || 0;
   const rateMissing = !(contractRate > 0);
   const profitEtb = contract.profit_etb ?? contract.total_profit_etb ?? 0;
-  const profitColor = rateMissing ? '#9ca3af' : (profitEtb >= 0 ? '#6F4E37' : '#dc2626');
+  const profitColor = rateMissing ? '#9ca3af' : (profitEtb >= 0 ? '#126333' : '#dc2626');
   const paymentTermsDisplay = contract.payment_terms === 'Other'
     ? (contract.custom_payment_terms || 'Other')
     : (contract.payment_terms || '—');
@@ -644,7 +644,7 @@ export default function ExportContracts() {
                       <TableCell className="text-right text-green-700 font-medium">{fmt(shippedKg, 0)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap text-xs font-medium">{priceLabel}</TableCell>
                       <TableCell className="text-right font-medium">{r.total_export_value_usd ? `$${fmt(r.total_export_value_usd, 3)}` : '—'}</TableCell>
-                      <TableCell className="text-right font-semibold" style={{ color: rateMissing ? '#9ca3af' : (profitEtb >= 0 ? '#6F4E37' : '#dc2626') }}>
+                      <TableCell className="text-right font-semibold" style={{ color: rateMissing ? '#9ca3af' : (profitEtb >= 0 ? '#126333' : '#dc2626') }}>
                         {rateMissing ? '—' : fmt(profitEtb)}
                       </TableCell>
                       <TableCell className="text-right text-xs">{rateMissing ? '—' : (profitMarginPct != null ? `${fmt(profitMarginPct, 1)}%` : '—')}</TableCell>
@@ -685,7 +685,7 @@ export default function ExportContracts() {
                 <div className="flex items-end justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground">Profit ETB</p>
-                    <p className="text-xl font-bold" style={{ color: profitEtb >= 0 ? '#6F4E37' : '#dc2626' }}>{fmt(profitEtb, 0)}</p>
+                    <p className="text-xl font-bold" style={{ color: profitEtb >= 0 ? '#126333' : '#dc2626' }}>{fmt(profitEtb, 0)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Export KG</p>

@@ -9,75 +9,75 @@
     --font-sans: 'Inter', sans-serif;
     --font-display: 'Playfair Display', serif;
 
-    /* Coffee ERP palette — espresso browns + warm amber, sampled from the brand logo. */
-    --background: 30 33% 97%;
-    --foreground: 24 42% 12%;
+    /* KKGT Import Export palette — brand green #126333 + brand orange #EB6C25, sampled from the logo. */
+    --background: 140 20% 98%;
+    --foreground: 150 30% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 24 42% 12%;
+    --card-foreground: 150 30% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 24 42% 12%;
-    --primary: 25 35% 30%;            /* coffee brown #6F4E37-ish */
-    --primary-foreground: 40 44% 96%;
-    --secondary: 32 58% 52%;          /* warm amber #C8873E */
-    --secondary-foreground: 24 45% 14%;
-    --muted: 30 20% 94%;
-    --muted-foreground: 24 12% 40%;
-    --accent: 30 62% 48%;             /* tan/amber accent */
-    --accent-foreground: 40 44% 96%;
+    --popover-foreground: 150 30% 12%;
+    --primary: 145 69% 23%;           /* brand green #126333 */
+    --primary-foreground: 140 40% 97%;
+    --secondary: 22 83% 53%;          /* brand orange #EB6C25 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 140 16% 94%;
+    --muted-foreground: 150 10% 38%;
+    --accent: 22 83% 53%;             /* brand orange accent */
+    --accent-foreground: 0 0% 100%;
     --destructive: 4 70% 47%;
     --destructive-foreground: 0 0% 98%;
-    --border: 28 18% 86%;
-    --input: 28 18% 86%;
-    --ring: 25 35% 30%;
-    --chart-1: 25 35% 33%;            /* coffee */
-    --chart-2: 32 58% 52%;            /* amber */
-    --chart-3: 95 45% 33%;            /* leaf green accent */
+    --border: 145 14% 86%;
+    --input: 145 14% 86%;
+    --ring: 145 69% 23%;
+    --chart-1: 145 69% 23%;           /* brand green */
+    --chart-2: 22 83% 53%;            /* brand orange */
+    --chart-3: 145 45% 40%;           /* mid green */
     --chart-4: 4 70% 47%;             /* red */
-    --chart-5: 30 25% 55%;
+    --chart-5: 35 30% 55%;            /* wheat tan */
     --radius: 0.625rem;
-    --sidebar-background: 24 45% 12%;   /* dark espresso */
-    --sidebar-foreground: 40 30% 92%;
-    --sidebar-primary: 32 60% 54%;      /* amber highlight */
-    --sidebar-primary-foreground: 24 45% 12%;
-    --sidebar-accent: 24 35% 18%;
-    --sidebar-accent-foreground: 40 30% 92%;
-    --sidebar-border: 24 28% 22%;
-    --sidebar-ring: 32 60% 54%;
+    --sidebar-background: 150 55% 9%;   /* dark brand green */
+    --sidebar-foreground: 140 25% 92%;
+    --sidebar-primary: 22 83% 53%;      /* orange highlight */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 40% 15%;
+    --sidebar-accent-foreground: 140 25% 92%;
+    --sidebar-border: 150 30% 20%;
+    --sidebar-ring: 22 83% 53%;
   }
 
   .dark {
-    --background: 25 25% 8%;
-    --foreground: 35 20% 95%;
-    --card: 25 25% 11%;
-    --card-foreground: 35 20% 95%;
-    --popover: 25 25% 11%;
-    --popover-foreground: 35 20% 95%;
-    --primary: 35 60% 55%;
-    --primary-foreground: 25 30% 10%;
-    --secondary: 25 20% 16%;
-    --secondary-foreground: 35 20% 90%;
-    --muted: 25 15% 18%;
-    --muted-foreground: 30 10% 55%;
-    --accent: 145 35% 40%;
-    --accent-foreground: 145 10% 98%;
+    --background: 150 25% 7%;
+    --foreground: 140 20% 95%;
+    --card: 150 22% 10%;
+    --card-foreground: 140 20% 95%;
+    --popover: 150 22% 10%;
+    --popover-foreground: 140 20% 95%;
+    --primary: 145 50% 42%;
+    --primary-foreground: 150 30% 8%;
+    --secondary: 22 83% 53%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 150 15% 16%;
+    --muted-foreground: 140 10% 58%;
+    --accent: 22 83% 53%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 25 15% 20%;
-    --input: 25 15% 20%;
-    --ring: 35 60% 55%;
-    --chart-1: 35 60% 55%;
-    --chart-2: 145 35% 40%;
-    --chart-3: 25 65% 40%;
-    --chart-4: 15 70% 50%;
-    --chart-5: 200 40% 50%;
-    --sidebar-background: 25 30% 6%;
-    --sidebar-foreground: 35 20% 85%;
-    --sidebar-primary: 35 60% 55%;
-    --sidebar-primary-foreground: 25 30% 10%;
-    --sidebar-accent: 25 25% 12%;
-    --sidebar-accent-foreground: 35 20% 90%;
-    --sidebar-border: 25 20% 14%;
-    --sidebar-ring: 35 60% 55%;
+    --border: 150 15% 18%;
+    --input: 150 15% 18%;
+    --ring: 145 50% 42%;
+    --chart-1: 145 50% 45%;
+    --chart-2: 22 83% 56%;
+    --chart-3: 145 40% 35%;
+    --chart-4: 15 70% 52%;
+    --chart-5: 35 40% 55%;
+    --sidebar-background: 150 30% 5%;
+    --sidebar-foreground: 140 20% 85%;
+    --sidebar-primary: 22 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 25% 11%;
+    --sidebar-accent-foreground: 140 20% 90%;
+    --sidebar-border: 150 20% 13%;
+    --sidebar-ring: 22 83% 53%;
   }
 }
 

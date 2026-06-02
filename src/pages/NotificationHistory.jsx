@@ -212,7 +212,7 @@ export default function NotificationHistory() {
                 >
                   <TableCell>
                     {!n.is_read && (
-                      <span className="block w-2 h-2 rounded-full mx-auto" style={{ backgroundColor: '#C8873E' }} />
+                      <span className="block w-2 h-2 rounded-full mx-auto" style={{ backgroundColor: '#EB6C25' }} />
                     )}
                   </TableCell>
                   <TableCell className="text-xs whitespace-nowrap">{fmtDate(n.created_date)}</TableCell>
@@ -227,7 +227,7 @@ export default function NotificationHistory() {
                   <TableCell>
                     {n.is_read
                       ? <span className="text-[10px] text-muted-foreground">Read</span>
-                      : <span className="text-[10px] font-bold" style={{ color: '#C8873E' }}>Unread</span>
+                      : <span className="text-[10px] font-bold" style={{ color: '#EB6C25' }}>Unread</span>
                     }
                   </TableCell>
                   <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">

@@ -106,10 +106,10 @@ export function exportUserReportExcel({ filteredStats, purchases, receipts, proc
   });
 
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-    ['Coffee ERP — User Activity Report'],
+    ['KKGT Import Export — User Activity Report'],
     [`Period: ${dateRange.from} to ${dateRange.to}`],
     [`Generated: ${format(new Date(), 'MMM d, yyyy HH:mm')}`],
   ]), 'Info');
 
-  XLSX.writeFile(wb, `CoffeeERP_User_Activity_${dateRange.from}_${dateRange.to}.xlsx`);
+  XLSX.writeFile(wb, `KKGT_User_Activity_${dateRange.from}_${dateRange.to}.xlsx`);
 }

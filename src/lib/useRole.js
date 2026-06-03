@@ -16,7 +16,7 @@ export const ROLES = {
 // Admin/Supervisor always have full access — this is the canonical list
 export const ADMIN_ROUTES = [
   '/', '/purchase-registration', '/warehouse-receipt', '/sample-log', '/processing-log',
-  '/output-report', '/buyer-inspections', '/master-data', '/reports', '/profit-loss', '/export-contracts',
+  '/output-report', '/buyer-inspections', '/master-data', '/reports', '/profit-loss', '/costing', '/export-contracts',
   '/materials-register', '/bag-ledger', '/stock-report', '/activity-log', '/permissions',
   '/notification-history', '/notification-settings', '/user-report', '/purchase-orders-report',
   '/warehouse-receipt-report', '/data-import', '/data-audit', '/user-management',

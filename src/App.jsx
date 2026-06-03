@@ -39,6 +39,7 @@ const WarehouseReceiptReport = lazy(() => import('@/pages/WarehouseReceiptReport
 const DataImport = lazy(() => import('@/pages/DataImport.jsx'));
 const DataAudit = lazy(() => import('@/pages/DataAudit.jsx'));
 const ProfitLoss = lazy(() => import('@/pages/ProfitLoss.jsx'));
+const CostingDashboard = lazy(() => import('@/pages/CostingDashboard.jsx'));
 const UserManagement = lazy(() => import('@/pages/UserManagement.jsx'));
 
 const RouteFallback = () => (
@@ -83,6 +84,7 @@ const AuthenticatedApp = () => {
           <Route path="/output-report" element={<OutputReportPage />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/profit-loss" element={<ProfitLoss />} />
+          <Route path="/costing" element={<CostingDashboard />} />
           <Route path="/buyer-inspections" element={<BuyerInspections />} />
           <Route path="/export-contracts" element={<ExportContracts />} />
           <Route path="/materials-register" element={<MaterialsRegister />} />

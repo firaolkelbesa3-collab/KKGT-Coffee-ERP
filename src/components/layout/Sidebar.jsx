@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, ClipboardList, Ship, FileBarChart2, Database, LogOut,
   Package, Layers, BarChart3, ShieldCheck, Boxes, FlaskConical, Factory,
-  PackageCheck, Activity, Lock, Users, Bell, Upload, Wallet,
+  PackageCheck, Activity, Lock, Users, Bell, Upload, Wallet, Coins,
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useRole } from '@/lib/useRole';
@@ -52,6 +52,7 @@ const MOBILE_GROUPS = [
     items: [
       { path: '/reports', label: 'Summary Reports', icon: FileBarChart2 },
       { path: '/profit-loss', label: 'Profit & Loss', icon: Wallet },
+      { path: '/costing', label: 'Costing & Margin', icon: Coins },
       { path: '/purchase-orders-report', label: 'Purchase Orders', icon: ClipboardList },
       { path: '/warehouse-receipt-report', label: 'Warehouse Report', icon: PackageCheck },
       { path: '/user-report', label: 'User Activity', icon: Users },

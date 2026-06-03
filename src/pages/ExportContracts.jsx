@@ -241,6 +241,8 @@ function exportContractPDF(contract) {
   row('Destination:', contract.destination_country || '—');
   row('Coffee Type:', contract.coffee_type || contract.commodity || '—');
   row('Coffee Grade:', contract.coffee_grade || '—');
+  row('Container No:', contract.container_no || '—');
+  row('Certificate No:', contract.certificate_no || '—');
   row('Payment Terms:', contract.payment_terms === 'Other' ? (contract.custom_payment_terms || 'Other') : (contract.payment_terms || '—'));
 
   y += 3; doc.setDrawColor(200, 200, 200); doc.line(M, y, W - M, y); y += 6;
@@ -345,6 +347,8 @@ function ContractDetailView({ contract, onBack, onEdit, onUpdatePayments }) {
               { label: 'Rate Confirmed', value: contract.rate_confirmed_date ? format(new Date(contract.rate_confirmed_date), 'dd/MM/yyyy') : '—' },
               { label: 'Payment Terms', value: paymentTermsDisplay },
               { label: 'Expected Payment', value: contract.expected_payment_date ? format(new Date(contract.expected_payment_date), 'dd/MM/yyyy') : '—' },
+              { label: 'Container No', value: contract.container_no || '—' },
+              { label: 'Certificate No', value: contract.certificate_no || '—' },
               { label: 'Remark', value: contract.remark || '—' },
             ].map(({ label, value }) => (
               <div key={label}>

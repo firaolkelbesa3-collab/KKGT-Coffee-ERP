@@ -443,6 +443,14 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
                   <Input value={form.destination_country || ''} onChange={e => set('destination_country', e.target.value)} required className="h-10" />
                 </div>
                 <div className="space-y-1">
+                  <Label className="text-xs font-medium">Container No</Label>
+                  <Input value={form.container_no || ''} onChange={e => set('container_no', e.target.value)} placeholder="e.g. MSCU-1234567" className="h-10 font-mono" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Certificate No</Label>
+                  <Input value={form.certificate_no || ''} onChange={e => set('certificate_no', e.target.value)} placeholder="e.g. CLU/ICO cert number" className="h-10 font-mono" />
+                </div>
+                <div className="space-y-1">
                   <Label className="text-xs font-medium">Buyer Name *</Label>
                   <Input value={form.buyer_name || ''} onChange={e => set('buyer_name', e.target.value)} required className="h-10" />
                 </div>

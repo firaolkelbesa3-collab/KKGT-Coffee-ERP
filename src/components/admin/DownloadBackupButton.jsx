@@ -3,11 +3,38 @@ import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Download, Loader2, Database } from 'lucide-react';
+import { base44, supabase } from '@/api/supabaseClient';
 import { parsePayments } from '@/components/purchases/PaymentHistoryPanel';
 import { calcTotalPaid, calcBalance, calcPaymentStatus } from '@/lib/paymentUtils';
 import { toast } from 'sonner';
+
+// Every table in the database — for the complete raw export.
+const ALL_TABLES = [
+  'suppliers', 'purchase_records', 'warehouse_receipts', 'warehouse_receipt_history',
+  'warehouse_inventory', 'processing_logs', 'processing_batches', 'output_reports',
+  'export_contracts', 'exports', 'buyer_inspections', 'sample_logs',
+  'bag_receipts', 'supplier_bag_returns', 'supplier_bag_payments',
+  'supplier_bag_settlements', 'reject_bag_usages', 'material_register_entries',
+  'material_entries', 'attachments', 'activity_logs', 'notifications',
+  'notification_settings', 'role_permissions', 'user_invites', 'profiles',
+];
+
+// Build a sheet from raw rows — every column, nothing trimmed.
+// JSON/object columns are stringified so nothing is lost.
+function rawSheet(rows) {
+  if (!rows || rows.length === 0) return XLSX.utils.aoa_to_sheet([['(no rows)']]);
+  const keys = Array.from(rows.reduce((set, r) => { Object.keys(r).forEach(k => set.add(k)); return set; }, new Set()));
+  const aoa = [keys, ...rows.map(r => keys.map(k => {
+    const v = r[k];
+    if (v == null) return '';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return v;
+  }))];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = keys.map(k => ({ wch: Math.min(Math.max(k.length + 2, 12), 40) }));
+  return ws;
+}
 
 function fmtNum(n) {
   if (n == null || isNaN(n)) return '';
@@ -45,6 +72,55 @@ function wbToBlob(ws, sheetName, title) {
 
 export default function DownloadBackupButton() {
   const [busy, setBusy] = useState(false);
+  const [rawBusy, setRawBusy] = useState(false);
+
+  // Complete raw export — every table, every column, one sheet per table.
+  const handleCompleteExport = async () => {
+    setRawBusy(true);
+    try {
+      const wb = XLSX.utils.book_new();
+      let totalRows = 0;
+      const skipped = [];
+      for (const table of ALL_TABLES) {
+        const { data, error } = await supabase.from(table).select('*').limit(10000);
+        if (error) { skipped.push(table); continue; }
+        totalRows += (data?.length || 0);
+        XLSX.utils.book_append_sheet(wb, rawSheet(data || []), table.slice(0, 31));
+      }
+      // Summary sheet first
+      const summary = XLSX.utils.aoa_to_sheet([
+        ['KKGT Import Export — Complete Data Export'],
+        [`Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`],
+        [],
+        ['Table', 'Rows'],
+        ...ALL_TABLES.filter(t => !skipped.includes(t)).map(t => {
+          const sheet = wb.Sheets[t.slice(0, 31)];
+          const range = sheet ? XLSX.utils.decode_range(sheet['!ref']) : null;
+          return [t, range ? range.e.r : 0];
+        }),
+      ]);
+      XLSX.utils.book_append_sheet(wb, summary, 'INDEX');
+      // Move INDEX to front
+      wb.SheetNames = ['INDEX', ...wb.SheetNames.filter(n => n !== 'INDEX')];
+
+      const out = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      const blob = new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `KKGT-Complete-Data-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Complete export: ${totalRows} rows across ${ALL_TABLES.length - skipped.length} tables`);
+    } catch (err) {
+      console.error(err);
+      toast.error(`Export failed: ${err.message || 'unknown error'}`);
+    } finally {
+      setRawBusy(false);
+    }
+  };
 
   const handleDownload = async () => {
     setBusy(true);
@@ -181,9 +257,15 @@ export default function DownloadBackupButton() {
   };
 
   return (
-    <Button variant="outline" onClick={handleDownload} disabled={busy} className="gap-2">
-      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-      {busy ? 'Preparing...' : 'Download Full Backup'}
-    </Button>
+    <div className="flex flex-wrap gap-2">
+      <Button variant="outline" onClick={handleDownload} disabled={busy} className="gap-2">
+        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+        {busy ? 'Preparing...' : 'Reports Backup'}
+      </Button>
+      <Button variant="outline" onClick={handleCompleteExport} disabled={rawBusy} className="gap-2">
+        {rawBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+        {rawBusy ? 'Exporting...' : 'Complete Data (All Tables)'}
+      </Button>
+    </div>
   );
 }

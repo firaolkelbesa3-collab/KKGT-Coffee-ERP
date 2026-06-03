@@ -563,6 +563,19 @@ export default function ProcessingLogPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
+  // Cumulative KG processed up to & including each entry (chronological order),
+  // keyed by row id so it's correct regardless of the table's display sort.
+  const cumulativeById = useMemo(() => {
+    const chrono = [...filtered].sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+    const map = {};
+    let running = 0;
+    chrono.forEach(r => {
+      running += Number(r.actual_weighed_kg ?? r.kg_sent ?? 0) || 0;
+      map[r.id] = running;
+    });
+    return map;
+  }, [filtered]);
+
   const COLS = [
     { label: '#', key: null },
     { label: 'Date', key: 'date' },
@@ -572,6 +585,7 @@ export default function ProcessingLogPage() {
     { label: 'Bags', key: 'bags_sent' },
     { label: 'Assumed KG', key: 'kg_sent' },
     { label: 'Actual KG', key: 'actual_weighed_kg' },
+    { label: 'Cumulative KG', key: null },
     { label: 'Variance KG', key: 'batch_variance_kg' },
     { label: 'Batch No', key: 'batch_no' },
     { label: 'Remark', key: null },
@@ -680,6 +694,7 @@ export default function ProcessingLogPage() {
                       <TableCell className="text-right">{r.bags_sent != null ? fmt(r.bags_sent, 0) : '—'}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{assumedKg > 0 ? fmt(assumedKg, 0) : '—'}</TableCell>
                       <TableCell className="text-right font-semibold">{fmt(actualKg)}</TableCell>
+                      <TableCell className="text-right text-primary font-medium tabular-nums">{fmt(cumulativeById[r.id] || 0, 0)}</TableCell>
                       <TableCell className={`text-right font-medium ${variance != null && variance < 0 ? 'text-destructive' : variance != null && variance > 0 ? 'text-green-600' : ''}`}>
                         {variance != null ? `${variance >= 0 ? '+' : ''}${fmt(variance)}` : '—'}
                       </TableCell>

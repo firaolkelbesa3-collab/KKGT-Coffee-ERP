@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import {
   UserPlus, Shield, Clock, CheckCircle2, XCircle, Mail,
-  MoreHorizontal, Edit2, UserX, UserCheck, Trash2, RefreshCw,
+  MoreHorizontal, Edit2, UserX, UserCheck, Trash2, RefreshCw, Copy, Check,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
@@ -85,16 +85,36 @@ async function deleteInvite(id) {
   if (error) throw error;
 }
 
+const APP_URL = typeof window !== 'undefined' ? window.location.origin : 'https://kkgt-coffee-erp.vercel.app';
+
 // ── Invite dialog ─────────────────────────────────────────────────────────────
 function InviteDialog({ open, onOpenChange, onSuccess }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
   const [note, setNote] = useState('');
-  const [busy, setBusy] = useState('');
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [done, setDone] = useState(false); // show share step after creation
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const reset = () => { setEmail(''); setRole(''); setNote(''); setErr(''); };
+  const reset = () => { setEmail(''); setRole(''); setNote(''); setErr(''); setDone(false); setCopied(false); };
+
+  const shareMessage = `You have been invited to KKGT Import Export ERP as ${ROLES.find(r => r.value === role)?.label || role}.
+
+To access the app:
+1. Open this link: ${APP_URL}/login
+2. Click "Sign in with Google"
+3. Use this email: ${email}
+
+Your role will be assigned automatically when you sign in.`;
+
+  const copyMessage = () => {
+    navigator.clipboard.writeText(shareMessage).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,10 +123,10 @@ function InviteDialog({ open, onOpenChange, onSuccess }) {
     setBusy(true); setErr('');
     try {
       await createInvite(email, role, note);
-      toast({ title: 'Invite created', description: `${email} will get the ${role} role on first sign-in.` });
-      reset(); onOpenChange(false); onSuccess?.();
+      setDone(true);
+      onSuccess?.();
     } catch (ex) {
-      setErr(ex?.message || 'Failed to create invite.');
+      setErr(ex?.message?.includes('unique') ? 'An invite for this email already exists.' : (ex?.message || 'Failed to create invite.'));
     } finally { setBusy(false); }
   };
 
@@ -115,56 +135,90 @@ function InviteDialog({ open, onOpenChange, onSuccess }) {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-primary" /> Invite New User
+            <UserPlus className="w-5 h-5 text-primary" />
+            {done ? 'Invite Created — Share with User' : 'Invite New User'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Email address *</Label>
-            <Input value={email} onChange={e => setEmail(e.target.value)} type="email"
-              placeholder="user@example.com" className="h-10" autoFocus />
-            <p className="text-[11px] text-muted-foreground">
-              They sign in with Google using this email — role is assigned automatically.
-            </p>
-          </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Role *</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="h-10"><SelectValue placeholder="Choose a role…" /></SelectTrigger>
-              <SelectContent>
-                {ROLES.map(r => (
-                  <SelectItem key={r.value} value={r.value}>
-                    <div>
+        {done ? (
+          /* ── Step 2: Share message ── */
+          <div className="space-y-4 pt-2">
+            <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-800 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              Invite created for <strong>{email}</strong> as <strong>{ROLES.find(r => r.value === role)?.label}</strong>.
+              Their role will be assigned automatically when they sign in.
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Share this message with the user</p>
+              <div className="rounded-lg bg-muted border border-border p-3 text-xs text-foreground whitespace-pre-wrap font-mono leading-relaxed">
+                {shareMessage}
+              </div>
+              <Button type="button" variant="outline" className="w-full gap-2 h-9" onClick={copyMessage}>
+                {copied ? <><Check className="w-4 h-4 text-green-600" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Message</>}
+              </Button>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground text-center">
+              Send this via WhatsApp, Telegram, or email. No automatic email is sent by the system.
+            </p>
+
+            <div className="flex justify-end">
+              <Button onClick={() => { reset(); onOpenChange(false); }}>Done</Button>
+            </div>
+          </div>
+        ) : (
+          /* ── Step 1: Form ── */
+          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Email address *</Label>
+              <Input value={email} onChange={e => setEmail(e.target.value)} type="email"
+                placeholder="user@example.com" className="h-10" autoFocus />
+              <p className="text-[11px] text-muted-foreground">
+                Must match the Google account they will use to sign in.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Role *</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="h-10"><SelectValue placeholder="Choose a role…" /></SelectTrigger>
+                <SelectContent>
+                  {ROLES.map(r => (
+                    <SelectItem key={r.value} value={r.value}>
                       <span className="font-medium">{r.label}</span>
                       <span className="text-muted-foreground text-xs ml-2">— {r.desc}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {role && (
-            <div className={`rounded-lg px-3 py-2 border text-xs ${ROLE_COLORS[role]}`}>
-              <strong>{ROLES.find(r => r.value === role)?.label}</strong> — {ROLES.find(r => r.value === role)?.desc}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {role && (
+                <div className={`rounded-lg px-3 py-2 border text-xs ${ROLE_COLORS[role]}`}>
+                  <strong>{ROLES.find(r => r.value === role)?.label}</strong> — {ROLES.find(r => r.value === role)?.desc}
+                </div>
+              )}
             </div>
-          )}
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Note (optional)</Label>
-            <Input value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Warehouse team, Gimbi branch" className="h-10" />
-          </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Note (optional)</Label>
+              <Input value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Warehouse team, Gimbi branch" className="h-10" />
+            </div>
 
-          {err && <p className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">{err}</p>}
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] text-amber-800 flex items-start gap-2">
+              <Mail className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              No email is sent automatically. After creating the invite, you will get a message to share with the user via WhatsApp or Telegram.
+            </div>
 
-          <div className="flex gap-2 justify-end pt-1">
-            <Button type="button" variant="outline" onClick={() => { reset(); onOpenChange(false); }}>Cancel</Button>
-            <Button type="submit" disabled={!!busy} className="gap-2">
-              <UserPlus className="w-4 h-4" /> {busy ? 'Sending…' : 'Create Invite'}
-            </Button>
-          </div>
-        </form>
+            {err && <p className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">{err}</p>}
+
+            <div className="flex gap-2 justify-end pt-1">
+              <Button type="button" variant="outline" onClick={() => { reset(); onOpenChange(false); }}>Cancel</Button>
+              <Button type="submit" disabled={busy} className="gap-2">
+                <UserPlus className="w-4 h-4" /> {busy ? 'Creating…' : 'Create Invite'}
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

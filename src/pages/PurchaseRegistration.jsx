@@ -200,25 +200,27 @@ function PurchaseFormDialog({ open, onOpenChange, initialData, suppliers, allRec
     const supplier = suppliers.find(s => s.supplier_name === supplierName);
     const region = supplier?.region || '';
     const code = initialData ? form.coffee_code : generateCoffeeCode(region, allRecords);
+
+    // Soft warning only — missing fields are editable, form is NOT blocked.
     if (supplier) {
       const missing = [];
-      if (!supplier.region) missing.push('Region');
       if (!supplier.agent) missing.push('Agent');
       if (!supplier.coffee_type) missing.push('Coffee Type');
       if (missing.length > 0) {
-        setSupplierError(`⛔ Cannot register purchase — supplier profile incomplete. Missing: ${missing.join(', ')}. Go to Master Data to complete this supplier's profile.`);
+        setSupplierError(`⚠️ Supplier profile incomplete — ${missing.join(', ')} not set in Master Data. Fill them in below or update Master Data first.`);
       } else {
         setSupplierError('');
       }
     } else {
       setSupplierError('');
     }
+
     setForm(prev => ({
       ...prev,
       supplier_name: supplierName,
       coffee_code: code,
-      // In edit mode: keep the stored agent, region, coffee_type exactly as-is
-      // In new mode only: auto-fill from Master Data
+      // In edit mode: keep the stored agent, region, coffee_type exactly as-is.
+      // In new mode: auto-fill whatever IS in Master Data; leave the rest blank for manual entry.
       ...(initialData ? {} : {
         agent: supplier?.agent || '',
         region,
@@ -286,7 +288,7 @@ function PurchaseFormDialog({ open, onOpenChange, initialData, suppliers, allRec
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (supplierError) return;
+    // supplierError is now a soft warning — don't block submission
     const data = buildData();
     // Block on code conflict
     if (!initialData && codeConflict) {

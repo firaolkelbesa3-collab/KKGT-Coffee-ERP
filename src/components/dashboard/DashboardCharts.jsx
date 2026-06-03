@@ -86,16 +86,20 @@ export default function DashboardCharts({ purchaseRecords = [], receipts = [] })
   }, [purchaseRecords, receipts]);
 
   const byCoffeeType = useMemo(() => {
+    // warehouse_receipts has no coffee_type column — look it up from
+    // purchase_records (already in memory) via the shared coffee_code.
+    const codeToType = {};
+    purchaseRecords.forEach(p => { if (p.coffee_code) codeToType[p.coffee_code] = p.coffee_type; });
     const map = {};
     receipts.forEach(r => {
-      const type = r.coffee_type || 'Unspecified';
+      const type = r.coffee_type || codeToType[r.coffee_code] || 'Unspecified';
       map[type] = (map[type] || 0) + (Number(r.warehouse_received_net_kg) || 0);
     });
     return Object.entries(map)
       .map(([type, kg]) => ({ type, kg }))
       .sort((a, b) => b.kg - a.kg)
       .slice(0, 6);
-  }, [receipts]);
+  }, [receipts, purchaseRecords]);
 
   const payment = useMemo(() => {
     let grand = 0, paid = 0;

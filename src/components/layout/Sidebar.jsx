@@ -64,6 +64,7 @@ const MOBILE_GROUPS = [
     icon: Database,
     flyoutTitle: 'Admin',
     items: [
+      { path: '/user-management', label: 'Users & Roles', icon: Users },
       { path: '/master-data', label: 'Master Data', icon: Database },
       { path: '/data-import', label: 'Data Import', icon: Upload },
       { path: '/data-audit', label: 'Data Audit', icon: ShieldCheck },

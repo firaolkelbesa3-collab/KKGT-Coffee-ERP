@@ -39,6 +39,7 @@ const WarehouseReceiptReport = lazy(() => import('@/pages/WarehouseReceiptReport
 const DataImport = lazy(() => import('@/pages/DataImport.jsx'));
 const DataAudit = lazy(() => import('@/pages/DataAudit.jsx'));
 const ProfitLoss = lazy(() => import('@/pages/ProfitLoss.jsx'));
+const UserManagement = lazy(() => import('@/pages/UserManagement.jsx'));
 
 const RouteFallback = () => (
   <div className="flex items-center justify-center py-24">
@@ -96,6 +97,7 @@ const AuthenticatedApp = () => {
           <Route path="/warehouse-receipt-report" element={<WarehouseReceiptReport />} />
           <Route path="/data-import" element={<DataImport />} />
           <Route path="/data-audit" element={<DataAudit />} />
+          <Route path="/user-management" element={<UserManagement />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

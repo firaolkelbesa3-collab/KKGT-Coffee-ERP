@@ -19,7 +19,7 @@ export const ADMIN_ROUTES = [
   '/output-report', '/buyer-inspections', '/master-data', '/reports', '/profit-loss', '/export-contracts',
   '/materials-register', '/bag-ledger', '/stock-report', '/activity-log', '/permissions',
   '/notification-history', '/notification-settings', '/user-report', '/purchase-orders-report',
-  '/warehouse-receipt-report', '/data-import', '/data-audit',
+  '/warehouse-receipt-report', '/data-import', '/data-audit', '/user-management',
 ];
 
 // System paths always included for every role (settings/notifications)

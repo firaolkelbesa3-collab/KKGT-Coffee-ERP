@@ -126,6 +126,7 @@ function CostRow({ row, onChange, onRemove, readOnlyAmount }) {
 // ─── Main ContractForm ────────────────────────────────────────────────────────
 export default function ContractForm({ open, onOpenChange, initialData, contractCount, availableStock, availableStockRecleaned = {}, masterCoffeeTypes, onSubmit, isSubmitting }) {
   const [form, setForm] = useState({});
+  const [step, setStep] = useState(1); // 2-step form: 1 = Contract & Pricing, 2 = Costs & Profit
   const [pricingMethod, setPricingMethod] = useState('per_lb'); // 'per_lb' | 'per_kg'
   const [stockPool, setStockPool] = useState('Fresh'); // 'Fresh' | 'Recleaned'
   const [costRows, setCostRows] = useState([]);
@@ -140,6 +141,7 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
 
   useEffect(() => {
     if (!open) return;
+    setStep(1); // always open at step 1
     if (initialData) {
       setForm({ ...initialData });
       setOriginalDestination(initialData.destination_country || '');
@@ -351,9 +353,25 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
         <DialogContent className="max-w-3xl w-full max-h-[95vh] overflow-y-auto p-0">
           <DialogHeader className="p-5 pb-4 sticky top-0 bg-background z-10 border-b border-border">
             <DialogTitle className="font-display text-lg">{isEdit ? 'Edit Contract' : 'New Export Contract'}</DialogTitle>
+            {/* Step indicator */}
+            <div className="flex items-center gap-0 mt-3">
+              <button type="button" onClick={() => setStep(1)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-l-lg border text-xs font-semibold transition-all ${step === 1 ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step === 1 ? 'bg-white/30' : 'bg-border'}`}>1</span>
+                Contract &amp; Pricing
+              </button>
+              <button type="button" onClick={() => setStep(2)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-r-lg border-t border-r border-b text-xs font-semibold transition-all ${step === 2 ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step === 2 ? 'bg-white/30' : 'bg-border'}`}>2</span>
+                Costs &amp; Profit
+              </button>
+            </div>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="p-5 space-y-8">
+
+            {/* ══════════════ STEP 1: Contract & Pricing ══════════════ */}
+            {step === 1 && <>
 
             {/* Stock Pool selector — choose which pool to draw from */}
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -571,6 +589,11 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
               )}
             </section>
 
+            </> /* end step 1 */}
+
+            {/* ══════════════ STEP 2: Costs & Profit ══════════════ */}
+            {step === 2 && <>
+
             {/* ── Cost Breakdown ───────────────────────────────────────── */}
             <section className="space-y-3">
               <div className="flex items-center justify-between border-b border-border pb-1">
@@ -656,9 +679,24 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
               </div>
             )}
 
+            </> /* end step 2 */}
+
             <div className="sticky bottom-0 bg-background pt-3 border-t border-border -mx-5 px-5 pb-1 flex gap-3 justify-end">
               <Button type="button" variant="outline" className="h-11 px-6" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="h-11 px-8">{isSubmitting ? 'Saving...' : isEdit ? 'Update Contract' : 'Save Contract'}</Button>
+              {step === 1 ? (
+                <Button type="button" className="h-11 px-8 gap-2" onClick={() => setStep(2)}>
+                  Next — Costs &amp; Profit <span className="text-base">→</span>
+                </Button>
+              ) : (
+                <>
+                  <Button type="button" variant="outline" className="h-11 px-6 gap-2" onClick={() => setStep(1)}>
+                    <span className="text-base">←</span> Back
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting} className="h-11 px-8">
+                    {isSubmitting ? 'Saving...' : isEdit ? 'Update Contract' : 'Save Contract'}
+                  </Button>
+                </>
+              )}
             </div>
           </form>
         </DialogContent>

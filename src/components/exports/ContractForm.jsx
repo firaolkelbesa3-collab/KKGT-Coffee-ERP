@@ -9,6 +9,10 @@ import { Plus, X } from 'lucide-react';
 import { InlineWarningList } from '@/components/notifications/InlineWarning';
 import { getExportContractWarnings } from '@/lib/formWarnings';
 import NumberInput from '@/components/shared/NumberInput';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/supabaseClient';
+import { computeCosting, costForContract } from '@/lib/costing';
+import { Sparkles } from 'lucide-react';
 
 function fmt(n, d = 2) {
   if (n == null || isNaN(n)) return '—';
@@ -139,6 +143,16 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
 
   const isEdit = !!initialData;
 
+  // ── Costing engine inputs (for the auto-suggested coffee cost) ───────────
+  const { data: costingPurchases = [] } = useQuery({ queryKey: ['purchase_records'], queryFn: () => base44.entities.PurchaseRecord.list('-created_date', 5000), enabled: open });
+  const { data: costingProcessing = [] } = useQuery({ queryKey: ['processing_logs'], queryFn: () => base44.entities.ProcessingLog.list('-date', 5000), enabled: open });
+  const { data: costingOutputs = [] } = useQuery({ queryKey: ['output_reports'], queryFn: () => base44.entities.OutputReport.list('-end_date', 5000), enabled: open });
+  const { data: costingContracts = [] } = useQuery({ queryKey: ['export_contracts'], queryFn: () => base44.entities.ExportContract.list('-contract_date', 5000), enabled: open });
+  const costing = useMemo(
+    () => computeCosting({ purchases: costingPurchases, processingLogs: costingProcessing, outputReports: costingOutputs, contracts: costingContracts }),
+    [costingPurchases, costingProcessing, costingOutputs, costingContracts]
+  );
+
   useEffect(() => {
     if (!open) return;
     setStep(1); // always open at step 1
@@ -246,6 +260,28 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
   // Cost totals (uses effective rows so Export Materials is always included)
   const totalCosts = effectiveCostRows.reduce((s, r) => s + (parseFloat(r.amount_etb) || 0), 0);
   const rejectSales = parseFloat(form.reject_sales_etb) || 0;
+
+  // ── Auto-suggested coffee cost (Supplier+Season WAC) ─────────────────────
+  const suggested = useMemo(() => {
+    if (!exportKg || !form.coffee_type || !form.contract_date) return null;
+    return costForContract(
+      { coffee_type: form.coffee_type, contract_date: form.contract_date, export_kg: exportKg },
+      costing
+    );
+  }, [exportKg, form.coffee_type, form.contract_date, costing]);
+
+  const purchaseCostRow = costRows.find(r => r.name === 'Purchase Cost ETB');
+  const currentPurchaseCost = parseFloat(purchaseCostRow?.amount_etb) || 0;
+
+  const applySuggestedCost = () => {
+    if (!suggested?.available) return;
+    const amount = String(Math.round(suggested.cogs));
+    setCostRows(prev => {
+      const idx = prev.findIndex(r => r.name === 'Purchase Cost ETB');
+      if (idx >= 0) { const next = [...prev]; next[idx] = { ...next[idx], amount_etb: amount }; return next; }
+      return [{ name: 'Purchase Cost ETB', amount_etb: amount }, ...prev];
+    });
+  };
 
   // Feature 1: Rate may be empty. Calculations show — placeholders when missing.
   const rateProvided = contractRate > 0;
@@ -610,6 +646,40 @@ export default function ContractForm({ open, onOpenChange, initialData, contract
                   <Plus className="w-3.5 h-3.5 mr-1" /> Add Cost
                 </Button>
               </div>
+
+              {/* Suggested coffee cost from the Supplier+Season WAC engine */}
+              {suggested && (
+                <div className={`rounded-xl border px-3 py-2.5 flex items-center justify-between gap-3 ${suggested.available ? 'bg-primary/5 border-primary/20' : 'bg-amber-50 border-amber-200'}`}>
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Sparkles className={`w-4 h-4 mt-0.5 flex-shrink-0 ${suggested.available ? 'text-primary' : 'text-amber-600'}`} />
+                    <div className="text-xs min-w-0">
+                      {suggested.available ? (
+                        <>
+                          <p className="font-semibold text-foreground">
+                            Suggested Purchase Cost: ETB {fmt(suggested.cogs, 0)}
+                          </p>
+                          <p className="text-muted-foreground mt-0.5">
+                            {fmt(exportKg, 0)} export KG × {fmt(suggested.costPerExportKg, 2)}/kg
+                            <span className="text-[10px]"> · {suggested.type} · {suggested.season} (Supplier+Season WAC)</span>
+                          </p>
+                          {currentPurchaseCost > 0 && Math.abs(currentPurchaseCost - suggested.cogs) > 1 && (
+                            <p className="text-[10px] text-amber-700 mt-0.5">Current entry: ETB {fmt(currentPurchaseCost, 0)} — differs from computed.</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-amber-800">
+                          No costing data yet for <strong>{suggested.type} · {suggested.season}</strong> — process some coffee of this type first, then the cost will compute automatically.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {suggested.available && (
+                    <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 flex-shrink-0 press" onClick={applySuggestedCost}>
+                      <Sparkles className="w-3.5 h-3.5" /> Use this
+                    </Button>
+                  )}
+                </div>
+              )}
               <div className="flex gap-2 mb-1">
                 <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">Cost Name</span>
                 <span className="w-44 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">Amount ETB</span>
